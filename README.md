@@ -1,0 +1,106 @@
+# Pulse
+
+AI-assisted family ancestry document workspace. Upload scans, photos, and PDFs of family history records. The app runs OCR, uses an LLM to extract structured data (people, dates, places, relationships), and asks you to review suggestions before they become confirmed knowledge.
+
+## Architecture
+
+Hexagonal (ports and adapters):
+
+```
+internal/
+├── domain/                     Pure Go types — Document, Person, Claim, etc.
+├── port/
+│   ├── inbound/                Use case interfaces (e.g. DocumentService)
+│   └── outbound/               Driven interfaces (DocumentRepository, ObjectStore)
+├── service/                    Application services — implement inbound ports
+└── adapter/
+    ├── inbound/httpserver/     HTTP adapter using nickbryan/httputil
+    └── outbound/
+        ├── postgres/           PostgreSQL repositories (pgx/v5)
+        └── s3/                 Scaleway Object Storage adapter
+```
+
+Dependency flow: `adapter` → `port` ← `service` → `domain`
+
+The frontend is a React + TypeScript (Vite) SPA embedded into the Go binary via `go:embed`. In dev mode the Go server proxies to the Vite dev server instead.
+
+## Requirements
+
+- Go 1.26+ (`/opt/homebrew/bin/go` if installed via Homebrew)
+- Node 22+
+- Docker (for local infrastructure and tests)
+
+## Development
+
+Add Go 1.26 to your shell if not already set:
+
+```bash
+echo 'export PATH=/opt/homebrew/bin:$PATH' >> ~/.zshrc && source ~/.zshrc
+```
+
+Install tooling and dependencies:
+
+```bash
+go install github.com/air-verse/air@latest   # Go hot reload
+brew install hivemind                         # process manager (no tmux required)
+go mod download
+make web-install
+```
+
+Then just:
+
+```bash
+make start
+```
+
+This starts Postgres and MinIO (waiting for healthchecks), then launches the Go API with hot reload and the Vite dev server together in one terminal. Ctrl+C stops everything.
+
+The Vite dev server proxies `/api` requests to the Go server on `:8080`, so HMR and API calls work together without CORS configuration.
+
+## Testing
+
+API tests use [testcontainers-go](https://testcontainers.com/guides/getting-started-with-testcontainers-for-go/) to spin up a real Postgres container per test run. Docker must be running.
+
+```bash
+make test
+```
+
+The `internal/testutil` package provides a `NewPostgresContainer(t)` helper that starts a container and registers cleanup automatically.
+
+## Production build
+
+```bash
+make build
+```
+
+This runs `npm run build` inside `web/`, then compiles the Go binary with the frontend assets embedded. The result is a single self-contained binary at `bin/pulse`.
+
+## Docker
+
+```bash
+make docker-build        # builds image tagged pulse:local
+docker run -p 8080:8080 pulse:local
+```
+
+The multi-stage `Dockerfile` builds the frontend, then the Go binary, and produces a minimal Alpine runtime image.
+
+## Local infrastructure
+
+`docker-compose.yml` provides:
+
+| Service  | Port        | Credentials                  |
+|----------|-------------|------------------------------|
+| Postgres | 5432        | pulse / pulse / pulse        |
+| MinIO    | 9000 (API)  | pulse / pulse-local          |
+|          | 9001 (UI)   |                              |
+
+MinIO mirrors Scaleway Object Storage (S3-compatible) for local development.
+
+## Key dependencies
+
+| Package | Purpose |
+|---------|---------|
+| [nickbryan/httputil](https://github.com/nickbryan/httputil) | Type-safe HTTP handlers, RFC 9457 error responses |
+| [jackc/pgx/v5](https://github.com/jackc/pgx) | PostgreSQL driver and connection pool |
+| [testcontainers-go](https://github.com/testcontainers/testcontainers-go) | Real Postgres containers for API tests |
+| React 19 + Vite 6 | Frontend SPA |

@@ -1,0 +1,30 @@
+# Go
+bin/
+tmp/
+*.test
+*.out
+coverage.html
+go.work
+go.work.sum
+
+# Web build artifacts — keep the placeholder so go:embed compiles on a fresh clone
+web/dist/*
+!web/dist/index.html
+web/node_modules/
+
+# Environment
+.env
+.env.local
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
