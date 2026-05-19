@@ -1,4 +1,4 @@
-.PHONY: start dev build test lint web-install web-dev web-build infra-up infra-down docker-build
+.PHONY: start dev build test lint web-install web-dev web-build infra-up infra-down docker-build migrate-diff migrate-apply migrate-status
 
 # Start everything: infrastructure, Go hot-reload server, and Vite dev server.
 # Requires: air (go install github.com/air-verse/air@latest) and hivemind (brew install hivemind)
@@ -38,3 +38,13 @@ infra-down:
 
 docker-build:
 	docker build -t pulse:local .
+
+# Usage: make migrate-diff name=describe_your_change
+migrate-diff:
+	atlas migrate diff --env local "$(name)"
+
+migrate-apply:
+	atlas migrate apply --env local
+
+migrate-status:
+	atlas migrate status --env local

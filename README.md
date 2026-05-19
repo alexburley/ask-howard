@@ -57,6 +57,38 @@ This starts Postgres and MinIO (waiting for healthchecks), then launches the Go 
 
 The Vite dev server proxies `/api` requests to the Go server on `:8080`, so HMR and API calls work together without CORS configuration.
 
+## Migrations
+
+Schema is managed with [Atlas Community Edition](https://atlasgo.io/community-edition) (Apache 2.0). The desired schema is declared in `schema.hcl` — Atlas diffs it against migration history to generate SQL.
+
+Install Atlas CE if you haven't already:
+
+```bash
+curl -sSf https://atlasgo.sh | sh -s -- --community
+# move the binary to ~/go/bin or anywhere on your PATH
+```
+
+**Changing the schema:**
+
+1. Edit `schema.hcl`
+2. Generate a migration:
+   ```bash
+   make migrate-diff name=describe_your_change
+   ```
+3. Review the generated SQL in `migrations/`
+4. Apply locally:
+   ```bash
+   make migrate-apply
+   ```
+
+Check migration status at any time:
+
+```bash
+make migrate-status
+```
+
+Migrations are applied automatically in tests via `testutil.NewPostgresContainer`, which uses the Atlas Go SDK against the testcontainers Postgres instance.
+
 ## Testing
 
 API tests use [testcontainers-go](https://testcontainers.com/guides/getting-started-with-testcontainers-for-go/) to spin up a real Postgres container per test run. Docker must be running.
