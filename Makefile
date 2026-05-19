@@ -15,6 +15,9 @@ build: web-build
 	go build -o bin/pulse ./cmd/server
 
 test:
+	go test -tags functional ./...
+
+test-unit:
 	go test ./...
 
 lint:

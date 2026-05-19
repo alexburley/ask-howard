@@ -2,12 +2,15 @@ package testutil
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"ariga.io/atlas-go-sdk/atlasexec"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // PostgresContainer holds a running test Postgres instance with migrations applied.
@@ -29,6 +32,10 @@ func NewPostgresContainer(t *testing.T) *PostgresContainer {
 		postgres.WithDatabase("pulse_test"),
 		postgres.WithUsername("pulse"),
 		postgres.WithPassword("pulse"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2),
+		),
 	)
 	if err != nil {
 		t.Fatalf("start postgres container: %v", err)
@@ -50,15 +57,13 @@ func NewPostgresContainer(t *testing.T) *PostgresContainer {
 	return &PostgresContainer{ConnectionString: connStr, container: c}
 }
 
-// applyMigrations runs all pending Atlas migrations against the given database URL.
 func applyMigrations(t *testing.T, connStr string) {
 	t.Helper()
 
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("could not resolve source file path for migrations")
+	root, err := projectRoot()
+	if err != nil {
+		t.Fatalf("find project root: %v", err)
 	}
-	root := filepath.Join(filepath.Dir(filename), "../..")
 
 	client, err := atlasexec.NewClient(root, "atlas")
 	if err != nil {
@@ -71,5 +76,23 @@ func applyMigrations(t *testing.T, connStr string) {
 	})
 	if err != nil {
 		t.Fatalf("apply migrations: %v", err)
+	}
+}
+
+// projectRoot walks up from the working directory until it finds a go.mod file.
+func projectRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("get working directory: %w", err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("go.mod not found")
+		}
+		dir = parent
 	}
 }

@@ -91,13 +91,16 @@ Migrations are applied automatically in tests via `testutil.NewPostgresContainer
 
 ## Testing
 
-API tests use [testcontainers-go](https://testcontainers.com/guides/getting-started-with-testcontainers-for-go/) to spin up a real Postgres container per test run. Docker must be running.
+Tests are split into two categories by build tag:
 
-```bash
-make test
-```
+| Command | Tag | What runs |
+|---------|-----|-----------|
+| `make test` | `functional` | All tests including functional (requires Docker) |
+| `make test-unit` | _(none)_ | Unit tests only, no containers needed |
 
-The `internal/testutil` package provides a `NewPostgresContainer(t)` helper that starts a container and registers cleanup automatically.
+**Functional tests** (`//go:build functional`) spin up real infrastructure via [testcontainers-go](https://testcontainers.com/guides/getting-started-with-testcontainers-for-go/). Docker must be running. Migrations are applied automatically before each test via `internal/testutil.NewPostgresContainer`.
+
+**Unit tests** use stubs and `httptest` only — no Docker required.
 
 ## Production build
 
