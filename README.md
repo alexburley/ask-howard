@@ -108,13 +108,13 @@ Tests are split into two categories by build tag:
 make build
 ```
 
-This runs `npm run build` inside `web/`, then compiles the Go binary with the frontend assets embedded. The result is a single self-contained binary at `bin/pulse`.
+This runs `npm run build` inside `web/`, then compiles the Go binary with the frontend assets embedded. The result is a single self-contained binary at `bin/ask-howard`.
 
 ## Docker
 
 ```bash
-make docker-build        # builds image tagged pulse:local
-docker run -p 8080:8080 pulse:local
+make docker-build        # builds image tagged ask-howard:local
+docker run -p 8080:8080 ask-howard:local
 ```
 
 The multi-stage `Dockerfile` builds the frontend, then the Go binary, and produces a minimal Alpine runtime image.
@@ -125,8 +125,8 @@ The multi-stage `Dockerfile` builds the frontend, then the Go binary, and produc
 
 | Service  | Port        | Credentials                  |
 |----------|-------------|------------------------------|
-| Postgres | 5432        | pulse / pulse / pulse        |
-| MinIO    | 9000 (API)  | pulse / pulse-local          |
+| Postgres | 5432        | ask-howard / ask-howard / ask-howard        |
+| MinIO    | 9000 (API)  | ask-howard / ask-howard-local          |
 |          | 9001 (UI)   |                              |
 
 MinIO mirrors Scaleway Object Storage (S3-compatible) for local development.

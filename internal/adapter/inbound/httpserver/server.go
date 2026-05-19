@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/alexburley/pulse/internal/adapter/inbound/httpserver/handler"
-	"github.com/alexburley/pulse/internal/port/inbound"
-	"github.com/alexburley/pulse/web"
+	"github.com/alexburley/ask-howard/internal/adapter/inbound/httpserver/handler"
+	"github.com/alexburley/ask-howard/internal/port/inbound"
+	"github.com/alexburley/ask-howard/web"
 	"github.com/nickbryan/httputil"
 )
 

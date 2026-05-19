@@ -12,10 +12,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/alexburley/pulse/internal/adapter/inbound/httpserver"
-	"github.com/alexburley/pulse/internal/adapter/outbound/postgres"
-	"github.com/alexburley/pulse/internal/service"
-	"github.com/alexburley/pulse/internal/testutil"
+	"github.com/alexburley/ask-howard/internal/adapter/inbound/httpserver"
+	"github.com/alexburley/ask-howard/internal/adapter/outbound/postgres"
+	"github.com/alexburley/ask-howard/internal/service"
+	"github.com/alexburley/ask-howard/internal/testutil"
 )
 
 const testJWTSecret = "test-secret-at-least-32-chars-long"

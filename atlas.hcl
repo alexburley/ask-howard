@@ -1,6 +1,6 @@
 variable "database_url" {
   type    = string
-  default = "postgres://pulse:pulse@localhost:5432/pulse?sslmode=disable"
+  default = "postgres://ask-howard:ask-howard@localhost:5432/ask-howard?sslmode=disable"
 }
 
 env "local" {

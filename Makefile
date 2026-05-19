@@ -12,7 +12,7 @@ dev:
 
 # Production build: compiles frontend then embeds it into the Go binary.
 build: web-build
-	go build -o bin/pulse ./cmd/server
+	go build -o bin/ask-howard ./cmd/server
 
 test:
 	go test -tags functional ./...
@@ -43,7 +43,7 @@ infra-down:
 	docker compose down
 
 docker-build:
-	docker build -t pulse:local .
+	docker build -t ask-howard:local .
 
 # Usage: make migrate-diff name=describe_your_change
 migrate-diff:

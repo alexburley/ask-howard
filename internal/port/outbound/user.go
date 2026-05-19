@@ -3,7 +3,7 @@ package outbound
 import (
 	"context"
 
-	"github.com/alexburley/pulse/internal/domain"
+	"github.com/alexburley/ask-howard/internal/domain"
 )
 
 type UserRepository interface {

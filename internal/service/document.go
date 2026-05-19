@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alexburley/pulse/internal/domain"
-	"github.com/alexburley/pulse/internal/port/inbound"
-	"github.com/alexburley/pulse/internal/port/outbound"
+	"github.com/alexburley/ask-howard/internal/domain"
+	"github.com/alexburley/ask-howard/internal/port/inbound"
+	"github.com/alexburley/ask-howard/internal/port/outbound"
 )
 
 type DocumentService struct {

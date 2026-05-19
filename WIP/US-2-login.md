@@ -93,7 +93,7 @@ Note: wrong password returns `ErrInvalidCredentials`, not a bcrypt error, to pre
         if err != nil {
             if errors.Is(err, domain.ErrInvalidCredentials) {
                 return nil, &problem.DetailedError{
-                    Type:   "https://pulse.app/problems/invalid-credentials",
+                    Type:   "https://ask-howard.io/problems/invalid-credentials",
                     Title:  "Invalid Credentials",
                     Status: http.StatusUnauthorized,
                 }

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/alexburley/pulse/internal/adapter/inbound/httpserver/token"
-	"github.com/alexburley/pulse/internal/domain"
-	"github.com/alexburley/pulse/internal/port/inbound"
+	"github.com/alexburley/ask-howard/internal/adapter/inbound/httpserver/token"
+	"github.com/alexburley/ask-howard/internal/domain"
+	"github.com/alexburley/ask-howard/internal/port/inbound"
 	"github.com/nickbryan/httputil"
 	"github.com/nickbryan/httputil/problem"
 )
@@ -32,7 +32,7 @@ func AuthEndpoints(svc inbound.AuthService, jwtSecret string) []httputil.Endpoin
 				if err != nil {
 					if errors.Is(err, domain.ErrEmailTaken) {
 						return nil, (&problem.DetailedError{
-							Type:   "https://pulse.app/problems/email-taken",
+							Type:   "https://ask-howard.io/problems/email-taken",
 							Title:  "Email Already Registered",
 							Status: http.StatusConflict,
 						}).WithDetail("An account with this email address already exists")

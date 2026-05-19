@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/alexburley/pulse/internal/domain"
-	"github.com/alexburley/pulse/internal/port/outbound"
+	"github.com/alexburley/ask-howard/internal/domain"
+	"github.com/alexburley/ask-howard/internal/port/outbound"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

@@ -1,4 +1,4 @@
-module github.com/alexburley/pulse
+module github.com/alexburley/ask-howard
 
 go 1.26
 

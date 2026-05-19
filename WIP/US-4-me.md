@@ -112,7 +112,7 @@ func (s *AuthService) GetByID(ctx context.Context, id string) (domain.User, erro
         userID, err := token.Parse(r.Request, jwtSecret)
         if err != nil {
             return nil, &problem.DetailedError{
-                Type:   "https://pulse.app/problems/unauthorized",
+                Type:   "https://ask-howard.io/problems/unauthorized",
                 Title:  "Unauthorized",
                 Status: http.StatusUnauthorized,
             }
@@ -122,7 +122,7 @@ func (s *AuthService) GetByID(ctx context.Context, id string) (domain.User, erro
         if err != nil {
             if errors.Is(err, domain.ErrUserNotFound) {
                 return nil, &problem.DetailedError{
-                    Type:   "https://pulse.app/problems/unauthorized",
+                    Type:   "https://ask-howard.io/problems/unauthorized",
                     Title:  "Unauthorized",
                     Status: http.StatusUnauthorized,
                 }

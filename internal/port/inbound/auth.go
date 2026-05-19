@@ -3,7 +3,7 @@ package inbound
 import (
 	"context"
 
-	"github.com/alexburley/pulse/internal/domain"
+	"github.com/alexburley/ask-howard/internal/domain"
 )
 
 type AuthService interface {

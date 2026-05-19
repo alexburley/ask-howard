@@ -29,9 +29,9 @@ func NewPostgresContainer(t *testing.T) *PostgresContainer {
 
 	c, err := postgres.Run(ctx,
 		"postgres:16-alpine",
-		postgres.WithDatabase("pulse_test"),
-		postgres.WithUsername("pulse"),
-		postgres.WithPassword("pulse"),
+		postgres.WithDatabase("ask-howard_test"),
+		postgres.WithUsername("ask-howard"),
+		postgres.WithPassword("ask-howard"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2),

@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/alexburley/pulse/internal/adapter/inbound/httpserver"
-	"github.com/alexburley/pulse/internal/adapter/outbound/postgres"
-	"github.com/alexburley/pulse/internal/service"
+	"github.com/alexburley/ask-howard/internal/adapter/inbound/httpserver"
+	"github.com/alexburley/ask-howard/internal/adapter/outbound/postgres"
+	"github.com/alexburley/ask-howard/internal/service"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://pulse:pulse@localhost:5432/pulse?sslmode=disable"
+		dbURL = "postgres://ask-howard:ask-howard@localhost:5432/ask-howard?sslmode=disable"
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")

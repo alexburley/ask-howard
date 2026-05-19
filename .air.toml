@@ -2,8 +2,8 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "go build -tags dev -o ./tmp/pulse ./cmd/server"
-  entrypoint = "./tmp/pulse"
+  cmd = "go build -tags dev -o ./tmp/ask-howard ./cmd/server"
+  entrypoint = "./tmp/ask-howard"
   include_ext = ["go"]
   exclude_dir = ["web", "tmp", "migrations", "internal/testutil"]
   delay = 500
