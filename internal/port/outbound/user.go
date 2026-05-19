@@ -4,10 +4,16 @@ import (
 	"context"
 
 	"github.com/alexburley/ask-howard/internal/domain"
+	"github.com/google/uuid"
 )
 
+type CreateUserParams struct {
+	Email        domain.Email
+	PasswordHash string
+}
+
 type UserRepository interface {
-	Create(ctx context.Context, email, passwordHash string) (domain.User, error)
-	FindByEmail(ctx context.Context, email string) (domain.User, error)
-	FindByID(ctx context.Context, id string) (domain.User, error)
+	Create(ctx context.Context, params CreateUserParams) (domain.User, error)
+	FindByEmail(ctx context.Context, email domain.Email) (domain.User, error)
+	FindByID(ctx context.Context, id uuid.UUID) (domain.User, error)
 }

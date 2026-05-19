@@ -1,11 +1,14 @@
 package domain
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/google/uuid"
+)
 
 var ErrEmailTaken = errors.New("email already registered")
 
 type User struct {
-	ID           string
-	Email        string
-	PasswordHash string
+	ID    uuid.UUID
+	Email Email
 }

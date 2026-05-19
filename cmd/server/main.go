@@ -7,26 +7,42 @@ import (
 
 	"github.com/alexburley/ask-howard/internal/adapter/inbound/httpserver"
 	"github.com/alexburley/ask-howard/internal/adapter/outbound/postgres"
+	"github.com/alexburley/ask-howard/internal/auth"
 	"github.com/alexburley/ask-howard/internal/service"
 )
+
+type config struct {
+	DatabaseURL string
+	JWTSecret   auth.JWTSecret
+}
+
+func loadConfig() config {
+	return config{
+		DatabaseURL: envOr("DATABASE_URL", "postgres://ask-howard:ask-howard@localhost:5432/ask-howard?sslmode=disable"),
+		JWTSecret:   auth.NewJWTSecret(os.Getenv("JWT_SECRET")),
+	}
+}
+
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		dbURL = "postgres://ask-howard:ask-howard@localhost:5432/ask-howard?sslmode=disable"
-	}
+	cfg := loadConfig()
 
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		jwtSecret = "dev-secret-do-not-use-in-production"
+	if cfg.JWTSecret.IsZero() {
+		cfg.JWTSecret = auth.NewJWTSecret("dev-secret-do-not-use-in-production")
 		logger.Warn("JWT_SECRET not set — using insecure default (dev only)")
 	}
 
 	ctx := context.Background()
 
-	pool, err := postgres.NewPool(ctx, dbURL)
+	pool, err := postgres.NewPool(ctx, cfg.DatabaseURL)
 	if err != nil {
 		logger.Error("connect to database", "error", err)
 		os.Exit(1)
@@ -36,6 +52,6 @@ func main() {
 	userRepo := postgres.NewUserRepository(pool)
 	authSvc := service.NewAuthService(userRepo)
 
-	srv := httpserver.NewServer(logger, pool, authSvc, jwtSecret)
+	srv := httpserver.NewServer(logger, pool, authSvc, cfg.JWTSecret)
 	srv.Serve(ctx)
 }

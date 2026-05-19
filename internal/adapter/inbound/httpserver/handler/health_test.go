@@ -3,7 +3,6 @@
 package handler_test
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -15,37 +14,39 @@ import (
 	"github.com/alexburley/ask-howard/internal/adapter/outbound/postgres"
 	"github.com/alexburley/ask-howard/internal/service"
 	"github.com/alexburley/ask-howard/internal/testutil"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestHealth_Functional(t *testing.T) {
-	pg := testutil.NewPostgresContainer(t)
+type HealthSuite struct {
+	testutil.Suite
+	server *httptest.Server
+}
 
-	pool, err := postgres.NewPool(context.Background(), pg.ConnectionString)
-	if err != nil {
-		t.Fatalf("create pool: %v", err)
-	}
-	t.Cleanup(pool.Close)
+func (s *HealthSuite) SetupSuite() {
+	s.Suite.SetupSuite()
 
-	authSvc := service.NewAuthService(postgres.NewUserRepository(pool))
-	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), pool, authSvc, testJWTSecret)
-	ts := httptest.NewServer(srv)
-	t.Cleanup(ts.Close)
+	authSvc := service.NewAuthService(postgres.NewUserRepository(s.Pool))
+	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), s.Pool, authSvc, testJWTSecret)
+	s.server = httptest.NewServer(srv)
+}
 
-	resp, err := ts.Client().Get(ts.URL + "/api/health")
-	if err != nil {
-		t.Fatalf("GET /api/health: %v", err)
-	}
+func (s *HealthSuite) TearDownSuite() {
+	s.server.Close()
+	s.Suite.TearDownSuite()
+}
+
+func TestHealthSuite(t *testing.T) {
+	suite.Run(t, new(HealthSuite))
+}
+
+func (s *HealthSuite) TestHealth_ReturnsOK() {
+	resp, err := s.server.Client().Get(s.server.URL + "/api/health")
+	s.Require().NoError(err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusOK)
-	}
+	s.Equal(http.StatusOK, resp.StatusCode)
 
 	var body map[string]string
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
-	}
-	if body["status"] != "OK" {
-		t.Errorf("body.status = %q, want %q", body["status"], "OK")
-	}
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&body))
+	s.Equal("OK", body["status"])
 }

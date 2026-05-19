@@ -5,56 +5,131 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"ariga.io/atlas-go-sdk/atlasexec"
-	"github.com/testcontainers/testcontainers-go"
+	"github.com/jackc/pgx/v5"
+	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// PostgresContainer holds a running test Postgres instance with migrations applied.
-type PostgresContainer struct {
-	ConnectionString string
-	container        *postgres.PostgresContainer
+const (
+	testDBUser     = "ask-howard"
+	testDBPassword = "ask-howard"
+)
+
+var (
+	sharedOnce  sync.Once
+	sharedPG    *postgresContainer
+	sharedPGErr error
+	dbCounter   atomic.Int64
+)
+
+type postgresContainer struct {
+	host string
+	port string
 }
 
-// NewPostgresContainer starts a Postgres container, applies all migrations, and
-// registers cleanup on t. The returned ConnectionString is ready to pass to
-// pgxpool.New or sql.Open.
-func NewPostgresContainer(t *testing.T) *PostgresContainer {
-	t.Helper()
+func (c *postgresContainer) adminConnStr() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/postgres?sslmode=disable",
+		testDBUser, testDBPassword, c.host, c.port)
+}
 
-	ctx := context.Background()
+func (c *postgresContainer) connStrFor(name string) string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		testDBUser, testDBPassword, c.host, c.port, name)
+}
 
-	c, err := postgres.Run(ctx,
-		"postgres:16-alpine",
-		postgres.WithDatabase("ask-howard_test"),
-		postgres.WithUsername("ask-howard"),
-		postgres.WithPassword("ask-howard"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2),
-		),
-	)
-	if err != nil {
-		t.Fatalf("start postgres container: %v", err)
-	}
+func getSharedContainer() (*postgresContainer, error) {
+	sharedOnce.Do(func() {
+		ctx := context.Background()
 
-	t.Cleanup(func() {
-		if err := c.Terminate(ctx); err != nil {
-			t.Errorf("terminate postgres container: %v", err)
+		c, err := postgres.Run(ctx,
+			"postgres:16-alpine",
+			postgres.WithDatabase("initial"),
+			postgres.WithUsername(testDBUser),
+			postgres.WithPassword(testDBPassword),
+			tc.WithWaitStrategy(
+				wait.ForLog("database system is ready to accept connections").
+					WithOccurrence(2),
+			),
+		)
+		if err != nil {
+			sharedPGErr = fmt.Errorf("start postgres container: %w", err)
+			return
 		}
+
+		host, err := c.Host(ctx)
+		if err != nil {
+			sharedPGErr = fmt.Errorf("get postgres host: %w", err)
+			return
+		}
+
+		port, err := c.MappedPort(ctx, "5432")
+		if err != nil {
+			sharedPGErr = fmt.Errorf("get postgres port: %w", err)
+			return
+		}
+
+		sharedPG = &postgresContainer{host: host, port: port.Port()}
 	})
 
-	connStr, err := c.ConnectionString(ctx, "sslmode=disable")
+	return sharedPG, sharedPGErr
+}
+
+// NewDatabase creates a fresh database in the shared Postgres container,
+// applies all migrations, and registers cleanup (drop) on t.
+func NewDatabase(t *testing.T) string {
+	t.Helper()
+
+	c, err := getSharedContainer()
 	if err != nil {
-		t.Fatalf("get postgres connection string: %v", err)
+		t.Fatalf("acquire shared postgres container: %v", err)
 	}
 
+	ctx := context.Background()
+	dbName := fmt.Sprintf("test_%d", dbCounter.Add(1))
+
+	conn, err := pgx.Connect(ctx, c.adminConnStr())
+	if err != nil {
+		t.Fatalf("connect to admin database: %v", err)
+	}
+
+	if _, err := conn.Exec(ctx, "CREATE DATABASE "+dbName); err != nil {
+		if closeErr := conn.Close(ctx); closeErr != nil {
+			t.Errorf("close admin connection: %v", closeErr)
+		}
+		t.Fatalf("create database %s: %v", dbName, err)
+	}
+
+	if err := conn.Close(ctx); err != nil {
+		t.Errorf("close admin connection: %v", err)
+	}
+
+	connStr := c.connStrFor(dbName)
 	applyMigrations(t, connStr)
 
-	return &PostgresContainer{ConnectionString: connStr, container: c}
+	t.Cleanup(func() {
+		dropConn, err := pgx.Connect(ctx, c.adminConnStr())
+		if err != nil {
+			t.Errorf("connect for database cleanup: %v", err)
+			return
+		}
+		defer func() {
+			if err := dropConn.Close(ctx); err != nil {
+				t.Errorf("close cleanup connection: %v", err)
+			}
+		}()
+
+		_, _ = dropConn.Exec(ctx,
+			"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1", dbName)
+		_, _ = dropConn.Exec(ctx, "DROP DATABASE "+dbName)
+	})
+
+	return connStr
 }
 
 func applyMigrations(t *testing.T, connStr string) {
@@ -79,7 +154,6 @@ func applyMigrations(t *testing.T, connStr string) {
 	}
 }
 
-// projectRoot walks up from the working directory until it finds a go.mod file.
 func projectRoot() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {

@@ -4,7 +4,6 @@ package handler_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -14,81 +13,75 @@ import (
 
 	"github.com/alexburley/ask-howard/internal/adapter/inbound/httpserver"
 	"github.com/alexburley/ask-howard/internal/adapter/outbound/postgres"
+	"github.com/alexburley/ask-howard/internal/auth"
 	"github.com/alexburley/ask-howard/internal/service"
 	"github.com/alexburley/ask-howard/internal/testutil"
+	"github.com/stretchr/testify/suite"
 )
 
-const testJWTSecret = "test-secret-at-least-32-chars-long"
+var testJWTSecret = auth.NewJWTSecret("test-secret-at-least-32-chars-long")
 
-func TestRegister_Functional(t *testing.T) {
-	pg := testutil.NewPostgresContainer(t)
+type AuthSuite struct {
+	testutil.Suite
+	server *httptest.Server
+}
 
-	pool, err := postgres.NewPool(context.Background(), pg.ConnectionString)
-	if err != nil {
-		t.Fatalf("create pool: %v", err)
-	}
-	t.Cleanup(pool.Close)
+func (s *AuthSuite) SetupSuite() {
+	s.Suite.SetupSuite()
 
-	authSvc := service.NewAuthService(postgres.NewUserRepository(pool))
-	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), pool, authSvc, testJWTSecret)
-	ts := httptest.NewServer(srv)
-	t.Cleanup(ts.Close)
+	authSvc := service.NewAuthService(postgres.NewUserRepository(s.Pool))
+	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), s.Pool, authSvc, testJWTSecret)
+	s.server = httptest.NewServer(srv)
+}
 
-	t.Run("created with valid credentials", func(t *testing.T) {
-		resp := postRegister(t, ts, "alice@example.com", "password123")
-		defer resp.Body.Close()
+func (s *AuthSuite) TearDownSuite() {
+	s.server.Close()
+	s.Suite.TearDownSuite()
+}
 
-		if resp.StatusCode != http.StatusCreated {
-			t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusCreated)
-		}
+func TestAuthSuite(t *testing.T) {
+	suite.Run(t, new(AuthSuite))
+}
 
-		var body map[string]string
-		if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-			t.Fatalf("decode body: %v", err)
-		}
-		if body["email"] != "alice@example.com" {
-			t.Errorf("email = %q, want %q", body["email"], "alice@example.com")
-		}
-		if body["id"] == "" {
-			t.Error("id is empty")
-		}
+func (s *AuthSuite) TestRegister_CreatedWithValidCredentials() {
+	resp := postRegister(s.T(), s.server, "alice@example.com", "password123")
+	defer resp.Body.Close()
 
-		cookie := cookieByName(resp, "token")
-		if cookie == nil {
-			t.Fatal("token cookie not set")
-		}
-		if !cookie.HttpOnly {
-			t.Error("token cookie is not HttpOnly")
-		}
-	})
+	s.Equal(http.StatusCreated, resp.StatusCode)
 
-	t.Run("conflict on duplicate email", func(t *testing.T) {
-		postRegister(t, ts, "bob@example.com", "password123")
-		resp := postRegister(t, ts, "bob@example.com", "password123")
-		defer resp.Body.Close()
+	var body map[string]string
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&body))
+	s.Equal("alice@example.com", body["email"])
+	s.NotEmpty(body["id"])
 
-		if resp.StatusCode != http.StatusConflict {
-			t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusConflict)
-		}
-	})
+	cookie := cookieByName(resp, "token")
+	s.Require().NotNil(cookie, "token cookie not set")
+	s.True(cookie.HttpOnly, "token cookie is not HttpOnly")
+}
 
-	t.Run("unprocessable on short password", func(t *testing.T) {
-		resp := postRegister(t, ts, "carol@example.com", "short")
-		defer resp.Body.Close()
+func (s *AuthSuite) TestRegister_ConflictOnDuplicateEmail() {
+	first := postRegister(s.T(), s.server, "bob@example.com", "password123")
+	first.Body.Close()
+	s.Require().Equal(http.StatusCreated, first.StatusCode, "first registration should succeed")
 
-		if resp.StatusCode != http.StatusUnprocessableEntity {
-			t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusUnprocessableEntity)
-		}
-	})
+	resp := postRegister(s.T(), s.server, "bob@example.com", "password123")
+	defer resp.Body.Close()
 
-	t.Run("unprocessable on invalid email", func(t *testing.T) {
-		resp := postRegister(t, ts, "not-an-email", "password123")
-		defer resp.Body.Close()
+	s.Equal(http.StatusConflict, resp.StatusCode)
+}
 
-		if resp.StatusCode != http.StatusUnprocessableEntity {
-			t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusUnprocessableEntity)
-		}
-	})
+func (s *AuthSuite) TestRegister_UnprocessableOnShortPassword() {
+	resp := postRegister(s.T(), s.server, "carol@example.com", "short")
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusUnprocessableEntity, resp.StatusCode)
+}
+
+func (s *AuthSuite) TestRegister_UnprocessableOnInvalidEmail() {
+	resp := postRegister(s.T(), s.server, "not-an-email", "password123")
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusUnprocessableEntity, resp.StatusCode)
 }
 
 func postRegister(t *testing.T, ts *httptest.Server, email, password string) *http.Response {
