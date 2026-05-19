@@ -123,13 +123,9 @@ The multi-stage `Dockerfile` builds the frontend, then the Go binary, and produc
 
 `docker-compose.yml` provides:
 
-| Service  | Port        | Credentials                  |
-|----------|-------------|------------------------------|
-| Postgres | 5432        | ask-howard / ask-howard / ask-howard        |
-| MinIO    | 9000 (API)  | ask-howard / ask-howard-local          |
-|          | 9001 (UI)   |                              |
-
-MinIO mirrors Scaleway Object Storage (S3-compatible) for local development.
+| Service  | Port | Credentials                              |
+|----------|------|------------------------------------------|
+| Postgres | 5432 | ask-howard / ask-howard / ask-howard     |
 
 ## Key dependencies
 
