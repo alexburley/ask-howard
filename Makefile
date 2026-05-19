@@ -47,10 +47,10 @@ docker-build:
 
 # Usage: make migrate-diff name=describe_your_change
 migrate-diff:
-	atlas migrate diff --env local "$(name)"
+	atlas migrate diff --config internal/adapter/outbound/postgres/atlas.hcl --env local "$(name)"
 
 migrate-apply:
-	atlas migrate apply --env local
+	atlas migrate apply --config internal/adapter/outbound/postgres/atlas.hcl --env local
 
 migrate-status:
-	atlas migrate status --env local
+	atlas migrate status --config internal/adapter/outbound/postgres/atlas.hcl --env local

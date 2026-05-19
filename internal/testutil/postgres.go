@@ -72,7 +72,7 @@ func applyMigrations(t *testing.T, connStr string) {
 
 	_, err = client.MigrateApply(context.Background(), &atlasexec.MigrateApplyParams{
 		URL:    connStr,
-		DirURL: "file://migrations",
+		DirURL: "file://internal/adapter/outbound/postgres/migrations",
 	})
 	if err != nil {
 		t.Fatalf("apply migrations: %v", err)

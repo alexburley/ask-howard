@@ -5,7 +5,7 @@ tmp_dir = "tmp"
   cmd = "go build -tags dev -o ./tmp/ask-howard ./cmd/server"
   entrypoint = "./tmp/ask-howard"
   include_ext = ["go"]
-  exclude_dir = ["web", "tmp", "migrations", "internal/testutil"]
+  exclude_dir = ["web", "tmp", "internal/testutil", "internal/adapter/outbound/postgres/migrations"]
   delay = 500
 
 [log]
