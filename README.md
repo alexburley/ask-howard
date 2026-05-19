@@ -1,6 +1,4 @@
-# Pulse
-
-AI-assisted family ancestry document workspace. Upload scans, photos, and PDFs of family history records. The app runs OCR, uses an LLM to extract structured data (people, dates, places, relationships), and asks you to review suggestions before they become confirmed knowledge.
+# Ask Howard
 
 ## Architecture
 

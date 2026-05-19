@@ -3,7 +3,7 @@
 # Start everything: infrastructure, Go hot-reload server, and Vite dev server.
 # Requires: air (go install github.com/air-verse/air@latest) and hivemind (brew install hivemind)
 start:
-	docker compose up -d --wait
+	docker compose up -d --wait --remove-orphans
 	hivemind
 
 # Run only the API server in dev mode (no hot reload, no frontend).
@@ -35,9 +35,9 @@ web-dev:
 web-build:
 	cd web && npm run build
 
-# Start local infrastructure (Postgres + MinIO). Required before running tests.
+# Start local infrastructure (Postgres). Required before running tests.
 infra-up:
-	docker compose up -d
+	docker compose up -d --remove-orphans
 
 infra-down:
 	docker compose down

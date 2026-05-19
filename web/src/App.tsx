@@ -1,7 +1,7 @@
 function App() {
   return (
     <div className="workspace">
-      <p>Pulse</p>
+      <p>Ask Howard</p>
     </div>
   )
 }
