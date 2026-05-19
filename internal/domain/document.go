@@ -2,8 +2,10 @@ package domain
 
 import "time"
 
-type OCRStatus string
-type AnalysisStatus string
+type (
+	OCRStatus      string
+	AnalysisStatus string
+)
 
 const (
 	OCRStatusPending    OCRStatus = "pending"

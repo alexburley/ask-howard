@@ -1,0 +1,50 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - bodyclose      # HTTP response bodies must be closed
+    - contextcheck   # context must be passed correctly
+    - err113         # errors must be static or wrapped, not bare fmt.Errorf
+    - goconst        # repeated string literals should be constants
+    - gocritic       # broad set of correctness and style checks
+    - misspell       # catches common spelling mistakes in comments/strings
+    - nilerr         # catches returning nil alongside a non-nil error
+    - noctx          # HTTP requests must use context-aware variants
+    - prealloc       # suggests pre-allocating slices where length is known
+    - revive         # idiomatic Go style (replaces golint)
+    - thelper        # test helper functions must call t.Helper()
+    - unconvert      # removes unnecessary type conversions
+    - unparam        # flags unused function parameters
+    - wrapcheck      # errors from external packages must be wrapped
+
+  settings:
+    revive:
+      rules:
+        # Requiring doc comments on every exported symbol conflicts with the
+        # project convention of writing no comments unless the WHY is non-obvious.
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - ifElseChain   # subjective; chain-of-if is sometimes clearer
+
+  exclusions:
+    rules:
+      # testutil is test scaffolding; bare fmt.Errorf without a static sentinel
+      # is acceptable here — defining Err vars would add no signal.
+      - path: internal/testutil/.*
+        linters:
+          - err113
+
+formatters:
+  enable:
+    - gofumpt    # strict superset of gofmt
+    - goimports  # import grouping and ordering

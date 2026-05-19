@@ -13,6 +13,7 @@ import (
 
 	"github.com/alexburley/pulse/internal/adapter/inbound/httpserver"
 	"github.com/alexburley/pulse/internal/adapter/outbound/postgres"
+	"github.com/alexburley/pulse/internal/service"
 	"github.com/alexburley/pulse/internal/testutil"
 )
 
@@ -25,7 +26,8 @@ func TestHealth_Functional(t *testing.T) {
 	}
 	t.Cleanup(pool.Close)
 
-	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), pool)
+	authSvc := service.NewAuthService(postgres.NewUserRepository(pool))
+	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), pool, authSvc, testJWTSecret)
 	ts := httptest.NewServer(srv)
 	t.Cleanup(ts.Close)
 

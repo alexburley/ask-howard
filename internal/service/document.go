@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/alexburley/pulse/internal/domain"
 	"github.com/alexburley/pulse/internal/port/inbound"
@@ -24,9 +25,17 @@ func (s *DocumentService) Upload(_ context.Context, _ string, _ []byte, _ string
 }
 
 func (s *DocumentService) GetByID(ctx context.Context, id string) (*domain.Document, error) {
-	return s.docs.FindByID(ctx, id)
+	doc, err := s.docs.FindByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("find document: %w", err)
+	}
+	return doc, nil
 }
 
 func (s *DocumentService) List(ctx context.Context) ([]*domain.Document, error) {
-	return s.docs.FindAll(ctx)
+	docs, err := s.docs.FindAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list documents: %w", err)
+	}
+	return docs, nil
 }

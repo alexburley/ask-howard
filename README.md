@@ -137,5 +137,7 @@ MinIO mirrors Scaleway Object Storage (S3-compatible) for local development.
 |---------|---------|
 | [nickbryan/httputil](https://github.com/nickbryan/httputil) | Type-safe HTTP handlers, RFC 9457 error responses |
 | [jackc/pgx/v5](https://github.com/jackc/pgx) | PostgreSQL driver and connection pool |
+| [golang-jwt/jwt/v5](https://github.com/golang-jwt/jwt) | JWT signing and verification (HS256) |
+| [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | bcrypt password hashing |
 | [testcontainers-go](https://github.com/testcontainers/testcontainers-go) | Real Postgres containers for API tests |
 | React 19 + Vite 6 | Frontend SPA |

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/alexburley/pulse/internal/adapter/inbound/httpserver/handler"
+	"github.com/alexburley/pulse/internal/port/inbound"
 	"github.com/alexburley/pulse/web"
 	"github.com/nickbryan/httputil"
 )
@@ -16,10 +17,11 @@ type HealthChecker interface {
 	Ping(ctx context.Context) error
 }
 
-func NewServer(logger *slog.Logger, db HealthChecker) *httputil.Server {
+func NewServer(logger *slog.Logger, db HealthChecker, authSvc inbound.AuthService, jwtSecret string) *httputil.Server {
 	srv := httputil.NewServer(logger)
 
 	srv.Register(httputil.EndpointGroup(handler.HealthEndpoints(db)).WithPrefix("/api")...)
+	srv.Register(httputil.EndpointGroup(handler.AuthEndpoints(authSvc, jwtSecret)).WithPrefix("/api")...)
 	srv.Register(httputil.Endpoint{
 		Method:  http.MethodGet,
 		Path:    "/",
