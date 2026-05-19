@@ -20,8 +20,8 @@ func main() {
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		logger.Error("JWT_SECRET environment variable is not set")
-		os.Exit(1)
+		jwtSecret = "dev-secret-do-not-use-in-production"
+		logger.Warn("JWT_SECRET not set — using insecure default (dev only)")
 	}
 
 	ctx := context.Background()
