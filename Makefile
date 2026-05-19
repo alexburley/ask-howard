@@ -1,4 +1,4 @@
-.PHONY: start dev build test test-unit lint fmt web-install web-dev web-build infra-up infra-down docker-build migrate-diff migrate-apply migrate-status
+.PHONY: start dev build test test-unit lint fmt kill web-install web-dev web-build infra-up infra-down docker-build migrate-diff migrate-apply migrate-status
 
 # Start everything: infrastructure, Go hot-reload server, and Vite dev server.
 # Requires: air (go install github.com/air-verse/air@latest) and hivemind (brew install hivemind)
@@ -25,6 +25,9 @@ lint:
 
 fmt:
 	golangci-lint fmt ./...
+
+kill:
+	@lsof -ti :8080,:5173 | xargs kill -9 2>/dev/null || true
 
 web-install:
 	cd web && npm install
