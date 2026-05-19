@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
@@ -9,10 +10,16 @@ import (
 	"github.com/nickbryan/httputil"
 )
 
-func NewServer(logger *slog.Logger) *httputil.Server {
+// HealthChecker is satisfied by any type that can report database liveness,
+// e.g. *pgxpool.Pool.
+type HealthChecker interface {
+	Ping(ctx context.Context) error
+}
+
+func NewServer(logger *slog.Logger, db HealthChecker) *httputil.Server {
 	srv := httputil.NewServer(logger)
 
-	srv.Register(httputil.EndpointGroup(handler.HealthEndpoints()).WithPrefix("/api")...)
+	srv.Register(httputil.EndpointGroup(handler.HealthEndpoints(db)).WithPrefix("/api")...)
 	srv.Register(httputil.Endpoint{
 		Method:  http.MethodGet,
 		Path:    "/",
