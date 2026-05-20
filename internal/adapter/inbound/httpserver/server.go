@@ -11,7 +11,7 @@ import (
 	"github.com/nickbryan/httputil"
 )
 
-func NewServer(logger *slog.Logger, db HealthChecker, authSvc inbound.AuthService, jwtSecret auth.JWTSecret) *httputil.Server {
+func NewServer(logger *slog.Logger, db inbound.HealthChecker, authSvc inbound.AuthService, jwtSecret auth.JWTSecret) *httputil.Server {
 	srv := httputil.NewServer(logger)
 
 	srv.Register(httputil.EndpointGroup(handler.HealthEndpoints(db)).WithPrefix("/api")...)
