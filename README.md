@@ -6,16 +6,15 @@ Hexagonal (ports and adapters):
 
 ```
 internal/
-├── domain/                     Pure Go types — Document, Person, Claim, etc.
+├── domain/                     Pure Go types — value objects and sentinel errors
 ├── port/
-│   ├── inbound/                Use case interfaces (e.g. DocumentService)
-│   └── outbound/               Driven interfaces (DocumentRepository, ObjectStore)
+│   ├── inbound/                Use case interfaces (e.g. AuthService)
+│   └── outbound/               Driven interfaces (UserRepository)
 ├── service/                    Application services — implement inbound ports
 └── adapter/
     ├── inbound/httpserver/     HTTP adapter using nickbryan/httputil
     └── outbound/
-        ├── postgres/           PostgreSQL repositories (pgx/v5)
-        └── s3/                 Scaleway Object Storage adapter
+        └── postgres/           PostgreSQL repositories (pgx/v5 + sqlc)
 ```
 
 Dependency flow: `adapter` → `port` ← `service` → `domain`
@@ -27,7 +26,7 @@ The frontend is a React + TypeScript (Vite) SPA embedded into the Go binary via 
 - Docker
 - Make
 
-That's it. Go, Node, golangci-lint, and Atlas are all provided by Docker — nothing needs to be installed locally.
+That's it. Go, Node, golangci-lint, Atlas, and sqlc are all provided by Docker — nothing needs to be installed locally.
 
 ## Development
 
@@ -54,18 +53,18 @@ make clean-start
 
 ## Migrations
 
-Schema is managed with [Atlas Community Edition](https://atlasgo.io/community-edition) (Apache 2.0). The desired schema is declared in `schema.hcl` — Atlas diffs it against migration history to generate SQL.
+Schema is managed with [Atlas Community Edition](https://atlasgo.io/community-edition) (Apache 2.0). The desired schema is declared in `internal/adapter/outbound/postgres/schema.hcl` — Atlas diffs it against migration history to generate SQL.
 
 Atlas CE runs inside the `ci` container — no local install needed.
 
 **Changing the schema:**
 
-1. Edit `schema.hcl`
+1. Edit `internal/adapter/outbound/postgres/schema.hcl`
 2. Generate a migration:
    ```bash
    make migrate-diff name=describe_your_change
    ```
-3. Review the generated SQL in `migrations/`
+3. Review the generated SQL in `internal/adapter/outbound/postgres/migrations/`
 4. Apply locally:
    ```bash
    make migrate-apply
@@ -91,14 +90,28 @@ make generate
 
 ## Testing
 
+### Backend
+
 Tests are split into two categories by build tag:
 
 | Command | Tag | What runs |
 |---------|-----|-----------|
 | `make test` | `functional` | All tests including functional |
-| `make test-unit` | _(none)_ | Unit tests only |
+| `make t` | `functional` | Same, with pretty output and coverage summary |
+| `make coverage` | `functional` | Full per-function coverage breakdown |
+| `make test-unit` | _(none)_ | Unit tests only (no Docker needed) |
 
 Both run inside the `ci` container. **Functional tests** (`//go:build functional`) spin up real infrastructure via [testcontainers-go](https://testcontainers.com/guides/getting-started-with-testcontainers-for-go/) — they use the Docker socket, not the compose Postgres. Migrations are applied automatically via `internal/testutil.NewPostgresContainer`.
+
+### Frontend (E2E)
+
+```bash
+make e2e
+```
+
+Runs Playwright tests against the full running stack (requires `make start` first). The `playwright` Docker service uses `mcr.microsoft.com/playwright:v1.60.0-noble` — no local browser install needed.
+
+E2E tests live in `web/e2e/`.
 
 ## Production build
 
@@ -112,11 +125,12 @@ Builds the production Docker image tagged `ask-howard:local`. The multi-stage `D
 
 `docker-compose.yml` provides:
 
-| Service  | Port | Notes                                        |
-|----------|------|----------------------------------------------|
-| Postgres | 5432 | ask-howard / ask-howard / ask-howard         |
-| API      | 8080 | Go binary via `air` hot-reload (`-tags dev`) |
-| Web      | 5173 | Vite dev server with HMR                     |
+| Service    | Port | Notes                                        |
+|------------|------|----------------------------------------------|
+| Postgres   | 5432 | ask-howard / ask-howard / ask-howard         |
+| API        | 8080 | Go binary via `air` hot-reload (`-tags dev`) |
+| Web        | 5173 | Vite dev server with HMR                     |
+| Playwright | —    | Profile `e2e` only — started by `make e2e`  |
 
 ## Key dependencies
 
@@ -124,8 +138,9 @@ Builds the production Docker image tagged `ask-howard:local`. The multi-stage `D
 |---------|---------|
 | [nickbryan/httputil](https://github.com/nickbryan/httputil) | Type-safe HTTP handlers, RFC 9457 error responses |
 | [jackc/pgx/v5](https://github.com/jackc/pgx) | PostgreSQL driver and connection pool |
+| [sqlc](https://sqlc.dev) | Type-safe SQL query generation |
 | [golang-jwt/jwt/v5](https://github.com/golang-jwt/jwt) | JWT signing and verification (HS256) |
 | [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | bcrypt password hashing |
-| [testcontainers-go](https://github.com/testcontainers/testcontainers-go) | Real Postgres containers for API tests |
-| [sqlc](https://sqlc.dev) | Type-safe SQL query generation |
+| [testcontainers-go](https://github.com/testcontainers/testcontainers-go) | Real Postgres containers for functional tests |
 | React 19 + Vite 6 | Frontend SPA |
+| [@playwright/test](https://playwright.dev) | E2E browser tests |
