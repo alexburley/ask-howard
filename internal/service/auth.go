@@ -23,17 +23,11 @@ func NewAuthService(users outbound.UserRepository) *AuthService {
 	return &AuthService{users: users}
 }
 
-func (s *AuthService) GetByID(ctx context.Context, rawID string) (domain.User, error) {
-	id, err := uuid.Parse(rawID)
-	if err != nil {
-		return domain.User{}, domain.ErrUserNotFound
-	}
-
+func (s *AuthService) GetByID(ctx context.Context, id uuid.UUID) (domain.User, error) {
 	user, err := s.users.FindByID(ctx, id)
 	if err != nil {
 		return domain.User{}, fmt.Errorf("find user: %w", err)
 	}
-
 	return user, nil
 }
 
