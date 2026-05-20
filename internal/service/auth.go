@@ -7,6 +7,7 @@ import (
 	"github.com/alexburley/ask-howard/internal/domain"
 	"github.com/alexburley/ask-howard/internal/port/inbound"
 	"github.com/alexburley/ask-howard/internal/port/outbound"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,6 +19,20 @@ var _ inbound.AuthService = (*AuthService)(nil)
 
 func NewAuthService(users outbound.UserRepository) *AuthService {
 	return &AuthService{users: users}
+}
+
+func (s *AuthService) GetByID(ctx context.Context, rawID string) (domain.User, error) {
+	id, err := uuid.Parse(rawID)
+	if err != nil {
+		return domain.User{}, domain.ErrUserNotFound
+	}
+
+	user, err := s.users.FindByID(ctx, id)
+	if err != nil {
+		return domain.User{}, fmt.Errorf("find user: %w", err)
+	}
+
+	return user, nil
 }
 
 func (s *AuthService) Login(ctx context.Context, rawEmail, rawPassword string) (domain.User, error) {

@@ -125,6 +125,44 @@ func (s *AuthSuite) TestLogin_UnauthorizedOnInvalidEmailFormat() {
 	s.Equal(http.StatusUnauthorized, resp.StatusCode)
 }
 
+func (s *AuthSuite) TestMe_OKWithValidCookie() {
+	registerResp := postRegister(s.T(), s.server, "me-user@example.com", "password123")
+	defer registerResp.Body.Close()
+	s.Require().Equal(http.StatusCreated, registerResp.StatusCode)
+
+	req, _ := http.NewRequest(http.MethodGet, s.server.URL+"/api/auth/me", nil)
+	req.AddCookie(cookieByName(registerResp, "token"))
+	resp, err := s.server.Client().Do(req)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusOK, resp.StatusCode)
+
+	var body map[string]string
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&body))
+	s.Equal("me-user@example.com", body["email"])
+	s.NotEmpty(body["id"])
+}
+
+func (s *AuthSuite) TestMe_UnauthorizedWithNoCookie() {
+	req, _ := http.NewRequest(http.MethodGet, s.server.URL+"/api/auth/me", nil)
+	resp, err := s.server.Client().Do(req)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusUnauthorized, resp.StatusCode)
+}
+
+func (s *AuthSuite) TestMe_UnauthorizedWithTamperedToken() {
+	req, _ := http.NewRequest(http.MethodGet, s.server.URL+"/api/auth/me", nil)
+	req.AddCookie(&http.Cookie{Name: "token", Value: "not.a.valid.jwt"})
+	resp, err := s.server.Client().Do(req)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusUnauthorized, resp.StatusCode)
+}
+
 func (s *AuthSuite) TestLogout_OKWithoutCookie() {
 	resp := postLogout(s.T(), s.server)
 	defer resp.Body.Close()

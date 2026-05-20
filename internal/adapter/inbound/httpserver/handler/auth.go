@@ -97,5 +97,33 @@ func AuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil
 				return httputil.OK(map[string]string{"status": "OK"})
 			}),
 		},
+		{
+			Method: http.MethodGet,
+			Path:   "/auth/me",
+			Handler: httputil.NewHandler(func(r httputil.RequestEmpty) (*httputil.Response, error) {
+				userID, err := token.Parse(r.Request, jwtSecret)
+				if err != nil {
+					return nil, &problem.DetailedError{
+						Type:   "https://ask-howard.io/problems/unauthorized",
+						Title:  "Unauthorized",
+						Status: http.StatusUnauthorized,
+					}
+				}
+
+				user, err := svc.GetByID(r.Context(), userID)
+				if err != nil {
+					if errors.Is(err, domain.ErrUserNotFound) {
+						return nil, &problem.DetailedError{
+							Type:   "https://ask-howard.io/problems/unauthorized",
+							Title:  "Unauthorized",
+							Status: http.StatusUnauthorized,
+						}
+					}
+					return nil, fmt.Errorf("get current user: %w", err)
+				}
+
+				return httputil.OK(userResponse{ID: user.ID.String(), Email: user.Email.String()})
+			}),
+		},
 	}
 }

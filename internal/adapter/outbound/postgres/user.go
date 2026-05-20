@@ -52,6 +52,9 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email domain.Email) (d
 func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (domain.User, error) {
 	row, err := r.queries.FindUserByID(ctx, id)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, domain.ErrUserNotFound
+		}
 		return domain.User{}, fmt.Errorf("find user by id: %w", err)
 	}
 	return toDomainUser(&row)
