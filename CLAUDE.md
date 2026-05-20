@@ -57,7 +57,7 @@ internal/
 
 ## Dev Workflow
 
-- `make start` — starts Docker infra (Postgres + MinIO), then launches air + Vite via hivemind.
+- `make start` — starts all services via Docker Compose: Postgres, Go API (air hot-reload), Vite dev server.
 - `//go:build dev` proxies frontend to Vite at `:5173`; `//go:build !dev` embeds `web/dist/`.
 - Go binary served on `:8080`; Vite proxies `/api` to it during development.
 
@@ -69,7 +69,7 @@ internal/
 - API calls go through `web/src/auth/api.ts` — throw `AuthError` with a typed `code` field; never expose raw fetch errors to components.
 - E2E tests use Playwright and live in `web/e2e/`. Run with `make e2e` (requires `make start` running first).
 - Each e2e test that creates a user must use a unique email (`test-${Date.now()}@example.com`) — there is no test DB reset between runs.
-- TypeScript must compile cleanly (`npx tsc --noEmit`) before considering frontend work done.
+- TypeScript must compile cleanly (`npx tsc --noEmit`) before considering frontend work done
 
 ## HTTP Request Files
 
