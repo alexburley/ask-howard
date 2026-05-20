@@ -13,6 +13,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build CI image (cached)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: ci
+          load: true
+          tags: ask-howard-ci:latest
+          cache-from: type=gha,scope=ci-image
+          cache-to: type=gha,scope=ci-image,mode=max
+
       - name: Lint
         run: make lint
 
@@ -22,6 +34,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build CI image (cached)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: ci
+          load: true
+          tags: ask-howard-ci:latest
+          cache-from: type=gha,scope=ci-image
+          cache-to: type=gha,scope=ci-image,mode=max
+
       - name: Unit tests
         run: make test-unit
 
@@ -30,6 +54,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build CI image (cached)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: ci
+          load: true
+          tags: ask-howard-ci:latest
+          cache-from: type=gha,scope=ci-image
+          cache-to: type=gha,scope=ci-image,mode=max
 
       - name: Functional tests
         run: make test
@@ -63,6 +99,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build CI image (cached)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: ci
+          load: true
+          tags: ask-howard-ci:latest
+          cache-from: type=gha,scope=ci-image
+          cache-to: type=gha,scope=ci-image,mode=max
+
+      - name: Build API image (cached)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: dev
+          load: true
+          tags: ask-howard-api:latest
+          cache-from: type=gha,scope=dev-image
+          cache-to: type=gha,scope=dev-image,mode=max
+
+      - name: Build web image (cached)
+        uses: docker/build-push-action@v7
+        with:
+          context: ./web
+          file: ./web/Dockerfile.dev
+          load: true
+          tags: ask-howard-web:latest
+          cache-from: type=gha,scope=web-dev-image
+          cache-to: type=gha,scope=web-dev-image,mode=max
 
       - name: Start stack
         run: docker compose up --build --remove-orphans -d
