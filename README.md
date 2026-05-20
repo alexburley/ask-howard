@@ -79,6 +79,16 @@ make migrate-status
 
 Migrations are applied automatically in tests via `testutil.NewPostgresContainer`, which uses the Atlas Go SDK against the testcontainers Postgres instance.
 
+## Code generation
+
+SQL queries live in `internal/adapter/outbound/postgres/queries/`. [sqlc](https://sqlc.dev) compiles them into type-safe Go code in `internal/adapter/outbound/postgres/db/` — do not edit those files by hand.
+
+After changing a `.sql` file, regenerate:
+
+```bash
+make generate
+```
+
 ## Testing
 
 Tests are split into two categories by build tag:
@@ -117,4 +127,5 @@ Builds the production Docker image tagged `ask-howard:local`. The multi-stage `D
 | [golang-jwt/jwt/v5](https://github.com/golang-jwt/jwt) | JWT signing and verification (HS256) |
 | [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | bcrypt password hashing |
 | [testcontainers-go](https://github.com/testcontainers/testcontainers-go) | Real Postgres containers for API tests |
+| [sqlc](https://sqlc.dev) | Type-safe SQL query generation |
 | React 19 + Vite 6 | Frontend SPA |

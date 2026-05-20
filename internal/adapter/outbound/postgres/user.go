@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/alexburley/ask-howard/internal/adapter/outbound/postgres/db"
 	"github.com/alexburley/ask-howard/internal/domain"
 	"github.com/alexburley/ask-howard/internal/port/outbound"
 	"github.com/google/uuid"
@@ -14,51 +15,51 @@ import (
 
 const uniqueViolation = "23505"
 
-var errNotImplemented = errors.New("not implemented")
-
 type UserRepository struct {
-	db *pgxpool.Pool
+	queries *db.Queries
 }
 
 var _ outbound.UserRepository = (*UserRepository)(nil)
 
-func NewUserRepository(db *pgxpool.Pool) *UserRepository {
-	return &UserRepository{db: db}
-}
-
-type storedUser struct {
-	id           uuid.UUID
-	email        string
-	passwordHash string
+func NewUserRepository(pool *pgxpool.Pool) *UserRepository {
+	return &UserRepository{queries: db.New(pool)}
 }
 
 func (r *UserRepository) Create(ctx context.Context, params outbound.CreateUserParams) (domain.User, error) {
-	var stored storedUser
-
-	err := r.db.QueryRow(ctx,
-		`INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, password_hash`,
-		params.Email.String(), params.PasswordHash,
-	).Scan(&stored.id, &stored.email, &stored.passwordHash)
+	row, err := r.queries.CreateUser(ctx, db.CreateUserParams{
+		Email:        params.Email.String(),
+		PasswordHash: params.PasswordHash,
+	})
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolation {
 			return domain.User{}, domain.ErrEmailTaken
 		}
-		return domain.User{}, fmt.Errorf("insert user: %w", err)
+		return domain.User{}, fmt.Errorf("create user: %w", err)
 	}
+	return toDomainUser(&row)
+}
 
-	email, err := domain.NewEmail(stored.email)
+func (r *UserRepository) FindByEmail(ctx context.Context, email domain.Email) (domain.User, error) {
+	row, err := r.queries.FindUserByEmail(ctx, email.String())
+	if err != nil {
+		return domain.User{}, fmt.Errorf("find user by email: %w", err)
+	}
+	return toDomainUser(&row)
+}
+
+func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (domain.User, error) {
+	row, err := r.queries.FindUserByID(ctx, id)
+	if err != nil {
+		return domain.User{}, fmt.Errorf("find user by id: %w", err)
+	}
+	return toDomainUser(&row)
+}
+
+func toDomainUser(u *db.User) (domain.User, error) {
+	email, err := domain.NewEmail(u.Email)
 	if err != nil {
 		return domain.User{}, fmt.Errorf("parse stored email: %w", err)
 	}
-
-	return domain.User{ID: stored.id, Email: email}, nil
-}
-
-func (r *UserRepository) FindByEmail(_ context.Context, _ domain.Email) (domain.User, error) {
-	return domain.User{}, fmt.Errorf("find user by email: %w", errNotImplemented)
-}
-
-func (r *UserRepository) FindByID(_ context.Context, _ uuid.UUID) (domain.User, error) {
-	return domain.User{}, fmt.Errorf("find user by id: %w", errNotImplemented)
+	return domain.User{ID: u.ID, Email: email}, nil
 }

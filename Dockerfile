@@ -11,7 +11,8 @@ RUN apk add --no-cache wget && \
     wget -q "https://release.ariga.io/atlas/atlas-community-linux-${ATLAS_ARCH}-latest" \
         -O /usr/local/bin/atlas && \
     chmod +x /usr/local/bin/atlas
-RUN go install gotest.tools/gotestsum@latest
+RUN go install gotest.tools/gotestsum@latest && \
+    go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 WORKDIR /app
 
 FROM golang:1.26-alpine AS dev

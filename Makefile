@@ -1,4 +1,4 @@
-.PHONY: start clean-start build test t coverage test-unit lint fmt migrate-diff migrate-apply migrate-status
+.PHONY: start clean-start build test t coverage test-unit lint fmt generate sqlc migrate-diff migrate-apply migrate-status
 
 # Run a command in the ci container without starting postgres.
 CI = docker compose run --rm --no-deps --build ci
@@ -42,6 +42,11 @@ lint:
 
 fmt:
 	$(CI) golangci-lint fmt ./...
+
+generate: sqlc
+
+sqlc:
+	$(CI) sqlc generate
 
 # Usage: make migrate-diff name=describe_your_change
 migrate-diff:

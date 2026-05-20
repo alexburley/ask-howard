@@ -24,16 +24,8 @@ internal/
 - Functional tests spin up real infrastructure via `testutil.NewPostgresContainer` (testcontainers-go).
 - `make test` runs functional tests (`-tags functional`). `make test-unit` runs unit tests only (no Docker needed).
 - Domain and service packages use plain unit tests with no build tag.
-- **Always run `make test` (functional) before considering a feature complete.** Docker must be running.
+- **Always run `make test` (functional) and `make lint` before considering a feature complete.** 
 
-## Linting
-
-- Linter: `golangci-lint` v2 with config in `.golangci.yml`. Run with `make lint`.
-- Auto-fix formatting with `make fmt` (runs `golangci-lint fmt`, which applies `gofumpt` and `goimports`).
-- **Always run `make lint` before finishing a task.** Fix all issues; do not add `//nolint` directives without a clear reason.
-- Enabled linters beyond the standard set: `bodyclose`, `contextcheck`, `err113`, `goconst`, `gocritic`, `misspell`, `nilerr`, `noctx`, `prealloc`, `revive`, `thelper`, `unconvert`, `unparam`, `wrapcheck`.
-- `revive` doc-comment rules (`exported`, `package-comments`) are disabled — consistent with the no-comments convention.
-- `err113`: errors must be defined as static `var Err… = errors.New(…)` or wrapped with `%w`; bare `fmt.Errorf("literal")` is not allowed outside `internal/testutil`.
 
 ## HTTP
 
@@ -41,13 +33,19 @@ internal/
 - `httputil.RequestEmpty` = `Request[struct{}, struct{}]` for handlers with no body or params.
 - `*http.Request` is embedded in the request type — use `r.Context()` directly.
 - Error responses use `problem.DetailedError` (RFC 9457) from `github.com/nickbryan/httputil/problem`.
-- Register endpoint groups with a prefix: `httputil.EndpointGroup(...).WithPrefix("/api")`.
 
 ## Conventions
 
 - All constant string values in responses are uppercase (e.g. `"OK"`, not `"ok"`).
 - Always update `README.md` when making structural, tooling, or architectural changes.
 - **Always prompt to commit after completing a task.** Remind the user to commit if they haven't.
+
+## Code Generation
+
+- sqlc generates type-safe query code from `internal/adapter/outbound/postgres/queries/*.sql`.
+- Generated files live in `internal/adapter/outbound/postgres/db/` — do not edit by hand.
+- Run `make generate` (or `make sqlc`) after changing any `.sql` query file.
+- `make generate` is the single entry point for all code generation tools.
 
 ## Database & Migrations
 
