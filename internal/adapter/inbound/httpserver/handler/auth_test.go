@@ -125,6 +125,27 @@ func (s *AuthSuite) TestLogin_UnauthorizedOnInvalidEmailFormat() {
 	s.Equal(http.StatusUnauthorized, resp.StatusCode)
 }
 
+func (s *AuthSuite) TestLogout_OKWithoutCookie() {
+	resp := postLogout(s.T(), s.server)
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusOK, resp.StatusCode)
+}
+
+func (s *AuthSuite) TestLogout_ClearsCookieAfterLogin() {
+	postRegister(s.T(), s.server, "logout-user@example.com", "password123").Body.Close()
+	postLogin(s.T(), s.server, "logout-user@example.com", "password123").Body.Close()
+
+	resp := postLogout(s.T(), s.server)
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusOK, resp.StatusCode)
+
+	cookie := cookieByName(resp, "token")
+	s.Require().NotNil(cookie, "cleared token cookie not present in response")
+	s.Equal(-1, cookie.MaxAge)
+}
+
 func postRegister(t *testing.T, ts *httptest.Server, email, password string) *http.Response {
 	t.Helper()
 
@@ -143,6 +164,16 @@ func postLogin(t *testing.T, ts *httptest.Server, email, password string) *http.
 	resp, err := ts.Client().Post(ts.URL+"/api/auth/login", "application/json", bytes.NewReader(body))
 	if err != nil {
 		t.Fatalf("POST /api/auth/login: %v", err)
+	}
+	return resp
+}
+
+func postLogout(t *testing.T, ts *httptest.Server) *http.Response {
+	t.Helper()
+
+	resp, err := ts.Client().Post(ts.URL+"/api/auth/logout", "application/json", nil)
+	if err != nil {
+		t.Fatalf("POST /api/auth/logout: %v", err)
 	}
 	return resp
 }

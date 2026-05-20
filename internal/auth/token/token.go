@@ -38,3 +38,15 @@ func Issue(w http.ResponseWriter, secret auth.JWTSecret, userID string) error {
 
 	return nil
 }
+
+func Clear(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     CookieName,
+		Value:    "",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   -1,
+		Path:     "/",
+	})
+}

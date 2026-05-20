@@ -89,5 +89,13 @@ func AuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil
 				return httputil.OK(userResponse{ID: user.ID.String(), Email: user.Email.String()})
 			}),
 		},
+		{
+			Method: http.MethodPost,
+			Path:   "/auth/logout",
+			Handler: httputil.NewHandler(func(r httputil.RequestEmpty) (*httputil.Response, error) {
+				token.Clear(r.ResponseWriter)
+				return httputil.OK(map[string]string{"status": "OK"})
+			}),
+		},
 	}
 }
