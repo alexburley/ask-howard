@@ -4,10 +4,10 @@ variable "database_url" {
 }
 
 env "local" {
-  src = "file://schema.hcl"
+  src = "file://internal/adapter/outbound/postgres/schema.hcl"
   url = var.database_url
   dev = "docker://postgres/16-alpine/dev"
   migration {
-    dir = "file://migrations"
+    dir = "file://internal/adapter/outbound/postgres/migrations"
   }
 }

@@ -61,6 +61,16 @@ internal/
 - `//go:build dev` proxies frontend to Vite at `:5173`; `//go:build !dev` embeds `web/dist/`.
 - Go binary served on `:8080`; Vite proxies `/api` to it during development.
 
+## Frontend
+
+- Stack: React 19, TypeScript, Vite. No client-side router — use conditional rendering.
+- Source layout: `web/src/auth/` (context + API client), `web/src/components/`, `web/src/hooks/`, `web/src/pages/`.
+- Auth state is managed by `AuthProvider` (wraps the app in `main.tsx`). Use `useAuth()` to access `user`, `isLoading`, `login`, `register`, `logout`.
+- API calls go through `web/src/auth/api.ts` — throw `AuthError` with a typed `code` field; never expose raw fetch errors to components.
+- E2E tests use Playwright and live in `web/e2e/`. Run with `make e2e` (requires `make start` running first).
+- Each e2e test that creates a user must use a unique email (`test-${Date.now()}@example.com`) — there is no test DB reset between runs.
+- TypeScript must compile cleanly (`npx tsc --noEmit`) before considering frontend work done.
+
 ## HTTP Request Files
 
 - Manual test requests live in `http/*.http` — one file per handler group.

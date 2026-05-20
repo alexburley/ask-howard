@@ -10,6 +10,7 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    allowedHosts: ['web'],
     proxy: {
       '/api': process.env.API_URL ?? 'http://localhost:8080',
     },

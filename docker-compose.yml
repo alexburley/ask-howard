@@ -45,6 +45,28 @@ services:
       - web_node_modules:/app/node_modules
     environment:
       API_URL: http://api:8080
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:5173 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.60.0-noble
+    profiles: [e2e]
+    working_dir: /app/web
+    volumes:
+      - .:/app
+      - playwright_node_modules:/app/web/node_modules
+    environment:
+      BASE_URL: http://web:5173
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_started
+    command: sh -c "npm ci && npx playwright test"
 
   ci:
     build:
@@ -63,3 +85,4 @@ volumes:
   go_cache:
   air_tmp:
   web_node_modules:
+  playwright_node_modules:

@@ -1,4 +1,4 @@
-.PHONY: start clean-start build test t coverage test-unit lint fmt generate sqlc migrate-diff migrate-apply migrate-status
+.PHONY: start clean-start build test t coverage test-unit lint fmt generate sqlc migrate-diff migrate-apply migrate-status e2e
 
 # Run a command in the ci container without starting postgres.
 CI = docker compose run --rm --no-deps --build ci
@@ -53,19 +53,23 @@ migrate-diff:
 	docker compose run --rm --build \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		ci atlas migrate diff \
-		--config internal/adapter/outbound/postgres/atlas.hcl \
+		--config file://internal/adapter/outbound/postgres/atlas.hcl \
 		--env local \
 		--var "database_url=postgres://ask-howard:ask-howard@postgres:5432/ask-howard?sslmode=disable" \
 		"$(name)"
 
 migrate-apply:
 	$(CI_DEPS) atlas migrate apply \
-		--config internal/adapter/outbound/postgres/atlas.hcl \
+		--config file://internal/adapter/outbound/postgres/atlas.hcl \
 		--env local \
 		--var "database_url=postgres://ask-howard:ask-howard@postgres:5432/ask-howard?sslmode=disable"
 
+# Run Playwright e2e tests. Requires `make start` to be running first.
+e2e:
+	docker compose --profile e2e run --rm playwright
+
 migrate-status:
 	$(CI_DEPS) atlas migrate status \
-		--config internal/adapter/outbound/postgres/atlas.hcl \
+		--config file://internal/adapter/outbound/postgres/atlas.hcl \
 		--env local \
 		--var "database_url=postgres://ask-howard:ask-howard@postgres:5432/ask-howard?sslmode=disable"
