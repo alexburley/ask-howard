@@ -7,6 +7,7 @@ import (
 	"github.com/alexburley/ask-howard/internal/domain"
 	"github.com/alexburley/ask-howard/internal/port/inbound"
 	"github.com/alexburley/ask-howard/internal/port/outbound"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
@@ -17,6 +18,24 @@ var _ inbound.AuthService = (*AuthService)(nil)
 
 func NewAuthService(users outbound.UserRepository) *AuthService {
 	return &AuthService{users: users}
+}
+
+func (s *AuthService) Login(ctx context.Context, rawEmail, rawPassword string) (domain.User, error) {
+	email, err := domain.NewEmail(rawEmail)
+	if err != nil {
+		return domain.User{}, domain.ErrInvalidCredentials
+	}
+
+	creds, err := s.users.FindCredentialsByEmail(ctx, email)
+	if err != nil {
+		return domain.User{}, fmt.Errorf("find credentials: %w", err)
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(creds.PasswordHash), []byte(rawPassword)); err != nil {
+		return domain.User{}, domain.ErrInvalidCredentials
+	}
+
+	return creds.User, nil
 }
 
 func (s *AuthService) Register(ctx context.Context, rawEmail, rawPassword string) (domain.User, error) {

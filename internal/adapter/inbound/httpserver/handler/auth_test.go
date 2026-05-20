@@ -84,6 +84,47 @@ func (s *AuthSuite) TestRegister_UnprocessableOnInvalidEmail() {
 	s.Equal(http.StatusUnprocessableEntity, resp.StatusCode)
 }
 
+func (s *AuthSuite) TestLogin_OKWithValidCredentials() {
+	postRegister(s.T(), s.server, "login-ok@example.com", "password123").Body.Close()
+
+	resp := postLogin(s.T(), s.server, "login-ok@example.com", "password123")
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusOK, resp.StatusCode)
+
+	var body map[string]string
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&body))
+	s.Equal("login-ok@example.com", body["email"])
+	s.NotEmpty(body["id"])
+
+	cookie := cookieByName(resp, "token")
+	s.Require().NotNil(cookie, "token cookie not set")
+	s.True(cookie.HttpOnly)
+}
+
+func (s *AuthSuite) TestLogin_UnauthorizedOnWrongPassword() {
+	postRegister(s.T(), s.server, "login-wrongpw@example.com", "password123").Body.Close()
+
+	resp := postLogin(s.T(), s.server, "login-wrongpw@example.com", "wrongpassword")
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusUnauthorized, resp.StatusCode)
+}
+
+func (s *AuthSuite) TestLogin_UnauthorizedOnUnknownEmail() {
+	resp := postLogin(s.T(), s.server, "nobody@example.com", "password123")
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusUnauthorized, resp.StatusCode)
+}
+
+func (s *AuthSuite) TestLogin_UnauthorizedOnInvalidEmailFormat() {
+	resp := postLogin(s.T(), s.server, "not-an-email", "password123")
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusUnauthorized, resp.StatusCode)
+}
+
 func postRegister(t *testing.T, ts *httptest.Server, email, password string) *http.Response {
 	t.Helper()
 
@@ -91,6 +132,17 @@ func postRegister(t *testing.T, ts *httptest.Server, email, password string) *ht
 	resp, err := ts.Client().Post(ts.URL+"/api/auth/register", "application/json", bytes.NewReader(body))
 	if err != nil {
 		t.Fatalf("POST /api/auth/register: %v", err)
+	}
+	return resp
+}
+
+func postLogin(t *testing.T, ts *httptest.Server, email, password string) *http.Response {
+	t.Helper()
+
+	body, _ := json.Marshal(map[string]string{"email": email, "password": password})
+	resp, err := ts.Client().Post(ts.URL+"/api/auth/login", "application/json", bytes.NewReader(body))
+	if err != nil {
+		t.Fatalf("POST /api/auth/login: %v", err)
 	}
 	return resp
 }

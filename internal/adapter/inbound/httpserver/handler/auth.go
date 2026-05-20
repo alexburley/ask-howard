@@ -13,9 +13,14 @@ import (
 	"github.com/nickbryan/httputil/problem"
 )
 
-type registerBody struct {
+type authBody struct {
 	Email    string `json:"email"    validate:"required,email"`
 	Password string `json:"password" validate:"required,min=8"`
+}
+
+type loginBody struct {
+	Email    string `json:"email"    validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 type userResponse struct {
@@ -28,7 +33,7 @@ func AuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil
 		{
 			Method: http.MethodPost,
 			Path:   "/auth/register",
-			Handler: httputil.NewHandler(func(r httputil.RequestData[registerBody]) (*httputil.Response, error) {
+			Handler: httputil.NewHandler(func(r httputil.RequestData[authBody]) (*httputil.Response, error) {
 				user, err := svc.Register(r.Context(), r.Data.Email, r.Data.Password)
 				if err != nil {
 					switch {
@@ -59,6 +64,29 @@ func AuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil
 				}
 
 				return httputil.Created(userResponse{ID: user.ID.String(), Email: user.Email.String()})
+			}),
+		},
+		{
+			Method: http.MethodPost,
+			Path:   "/auth/login",
+			Handler: httputil.NewHandler(func(r httputil.RequestData[loginBody]) (*httputil.Response, error) {
+				user, err := svc.Login(r.Context(), r.Data.Email, r.Data.Password)
+				if err != nil {
+					if errors.Is(err, domain.ErrInvalidCredentials) {
+						return nil, (&problem.DetailedError{
+							Type:   "https://ask-howard.io/problems/invalid-credentials",
+							Title:  "Invalid Credentials",
+							Status: http.StatusUnauthorized,
+						}).WithDetail("Invalid email or password")
+					}
+					return nil, fmt.Errorf("login: %w", err)
+				}
+
+				if err := token.Issue(r.ResponseWriter, jwtSecret, user.ID.String()); err != nil {
+					return nil, fmt.Errorf("issue token: %w", err)
+				}
+
+				return httputil.OK(userResponse{ID: user.ID.String(), Email: user.Email.String()})
 			}),
 		},
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/alexburley/ask-howard/internal/domain"
 	"github.com/alexburley/ask-howard/internal/port/outbound"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -54,6 +55,21 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (domain.Use
 		return domain.User{}, fmt.Errorf("find user by id: %w", err)
 	}
 	return toDomainUser(&row)
+}
+
+func (r *UserRepository) FindCredentialsByEmail(ctx context.Context, email domain.Email) (outbound.UserCredentials, error) {
+	row, err := r.queries.FindUserByEmail(ctx, email.String())
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return outbound.UserCredentials{}, domain.ErrInvalidCredentials
+		}
+		return outbound.UserCredentials{}, fmt.Errorf("find user credentials: %w", err)
+	}
+	user, err := toDomainUser(&row)
+	if err != nil {
+		return outbound.UserCredentials{}, err
+	}
+	return outbound.UserCredentials{User: user, PasswordHash: row.PasswordHash}, nil
 }
 
 func toDomainUser(u *db.User) (domain.User, error) {
