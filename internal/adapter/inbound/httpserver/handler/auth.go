@@ -14,6 +14,11 @@ import (
 	"github.com/nickbryan/httputil/problem"
 )
 
+const (
+	problemUnauthorizedType  = "https://ask-howard.io/problems/unauthorized"
+	problemUnauthorizedTitle = "Unauthorized"
+)
+
 type authBody struct {
 	Email    string `json:"email"    validate:"required,email"`
 	Password string `json:"password" validate:"required,min=8"`
@@ -105,8 +110,8 @@ func AuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil
 				rawID, err := token.Parse(r.Request, jwtSecret)
 				if err != nil {
 					return nil, &problem.DetailedError{
-						Type:   "https://ask-howard.io/problems/unauthorized",
-						Title:  "Unauthorized",
+						Type:   problemUnauthorizedType,
+						Title:  problemUnauthorizedTitle,
 						Status: http.StatusUnauthorized,
 					}
 				}
@@ -114,8 +119,8 @@ func AuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil
 				userID, err := uuid.Parse(rawID)
 				if err != nil {
 					return nil, &problem.DetailedError{
-						Type:   "https://ask-howard.io/problems/unauthorized",
-						Title:  "Unauthorized",
+						Type:   problemUnauthorizedType,
+						Title:  problemUnauthorizedTitle,
 						Status: http.StatusUnauthorized,
 					}
 				}
@@ -124,8 +129,8 @@ func AuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil
 				if err != nil {
 					if errors.Is(err, domain.ErrUserNotFound) {
 						return nil, &problem.DetailedError{
-							Type:   "https://ask-howard.io/problems/unauthorized",
-							Title:  "Unauthorized",
+							Type:   problemUnauthorizedType,
+							Title:  problemUnauthorizedTitle,
 							Status: http.StatusUnauthorized,
 						}
 					}

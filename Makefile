@@ -1,9 +1,13 @@
-.PHONY: start clean-start build test t coverage test-unit lint fmt generate sqlc migrate-diff migrate-apply migrate-status e2e
+.PHONY: start clean-start build test t coverage test-unit lint fmt generate sqlc migrate-diff migrate-apply migrate-status e2e hooks
 
 # Run a command in the ci container without starting postgres.
 CI = docker compose run --rm --no-deps --build ci
 # Run a command in the ci container, starting postgres first (via depends_on).
 CI_DEPS = docker compose run --rm --build ci
+
+# Install git hooks (run once after cloning).
+hooks:
+	git config core.hooksPath .githooks
 
 # Start everything in Docker: Postgres, Go API (air hot-reload), and Vite dev server.
 start:

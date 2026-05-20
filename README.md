@@ -30,6 +30,14 @@ That's it. Go, Node, golangci-lint, Atlas, and sqlc are all provided by Docker â
 
 ## Development
 
+After cloning, install the git hooks (runs lint and unit tests before each commit):
+
+```bash
+make hooks
+```
+
+Then start the stack:
+
 ```bash
 make start
 ```

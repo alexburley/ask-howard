@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+echo "→ lint"
+make lint
+
+echo "→ test-unit"
+make test-unit
