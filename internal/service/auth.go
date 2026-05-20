@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const bcryptCost = 12
+
 type AuthService struct {
 	users outbound.UserRepository
 }
@@ -64,10 +66,11 @@ func (s *AuthService) Register(ctx context.Context, rawEmail, rawPassword string
 		return domain.User{}, fmt.Errorf("validate password: %w", err)
 	}
 
-	hash, err := password.Hash()
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password.String()), bcryptCost)
 	if err != nil {
 		return domain.User{}, fmt.Errorf("hash password: %w", err)
 	}
+	hash := string(hashed)
 
 	user, err := s.users.Create(ctx, outbound.CreateUserParams{
 		Email:        email,

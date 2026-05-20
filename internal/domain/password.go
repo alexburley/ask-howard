@@ -1,16 +1,8 @@
 package domain
 
-import (
-	"errors"
-	"fmt"
+import "errors"
 
-	"golang.org/x/crypto/bcrypt"
-)
-
-const (
-	bcryptCost        = 12
-	minPasswordLength = 8
-)
+const minPasswordLength = 8
 
 var ErrPasswordTooShort = errors.New("password must be at least 8 characters")
 
@@ -25,10 +17,4 @@ func NewPassword(s string) (Password, error) {
 	return Password{value: s}, nil
 }
 
-func (p Password) Hash() (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(p.value), bcryptCost)
-	if err != nil {
-		return "", fmt.Errorf("hash password: %w", err)
-	}
-	return string(hash), nil
-}
+func (p Password) String() string { return p.value }
