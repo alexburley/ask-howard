@@ -2,7 +2,7 @@ FROM golangci/golangci-lint:latest-alpine AS golangci-lint-bin
 
 FROM golang:1.26-alpine AS ci
 COPY --from=golangci-lint-bin /usr/bin/golangci-lint /usr/local/bin/golangci-lint
-RUN apk add --no-cache wget && \
+RUN apk add --no-cache wget postgresql-client && \
     ARCH=$(uname -m) && \
     case "$ARCH" in \
         aarch64) ATLAS_ARCH=arm64 ;; \

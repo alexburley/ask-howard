@@ -54,13 +54,13 @@ sqlc:
 
 # Usage: make migrate-diff name=describe_your_change
 migrate-diff:
-	docker compose run --rm --build \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		ci atlas migrate diff \
+	$(CI_DEPS) sh -c '\
+		PGPASSWORD=ask-howard createdb -h postgres -U ask-howard ask-howard-dev 2>/dev/null || true && \
+		atlas migrate diff \
 		--config file://internal/adapter/outbound/postgres/atlas.hcl \
 		--env local \
 		--var "database_url=postgres://ask-howard:ask-howard@postgres:5432/ask-howard?sslmode=disable" \
-		"$(name)"
+		"$(name)"'
 
 migrate-apply:
 	$(CI_DEPS) atlas migrate apply \

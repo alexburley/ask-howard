@@ -26,6 +26,10 @@ table "users" {
     type    = timestamptz
     default = sql("now()")
   }
+  column "last_login_at" {
+    null = true
+    type = timestamptz
+  }
 
   primary_key {
     columns = [column.id]
