@@ -44,6 +44,9 @@ func (r *UserRepository) Create(ctx context.Context, params outbound.CreateUserP
 func (r *UserRepository) FindByEmail(ctx context.Context, email domain.Email) (domain.User, error) {
 	row, err := r.queries.FindUserByEmail(ctx, email.String())
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, domain.ErrUserNotFound
+		}
 		return domain.User{}, fmt.Errorf("find user by email: %w", err)
 	}
 	return toDomainUser(&row)
