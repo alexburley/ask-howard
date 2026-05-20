@@ -47,6 +47,7 @@ internal/
 
 - All constant string values in responses are uppercase (e.g. `"OK"`, not `"ok"`).
 - Always update `README.md` when making structural, tooling, or architectural changes.
+- **Always prompt to commit after completing a task.** Remind the user to commit if they haven't.
 
 ## Database & Migrations
 
@@ -65,4 +66,3 @@ internal/
 ## HTTP Request Files
 
 - Manual test requests live in `http/*.http` — one file per handler group.
-- Compatible with VS Code REST Client and JetBrains HTTP Client.

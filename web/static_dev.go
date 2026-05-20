@@ -6,11 +6,14 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 )
 
-// Handler proxies requests to the local Vite dev server.
-// Run with: go run -tags dev ./cmd/server
 func Handler() http.Handler {
-	target, _ := url.Parse("http://localhost:5173")
+	viteURL := os.Getenv("VITE_URL")
+	if viteURL == "" {
+		viteURL = "http://localhost:5173"
+	}
+	target, _ := url.Parse(viteURL)
 	return httputil.NewSingleHostReverseProxy(target)
 }

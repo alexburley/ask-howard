@@ -1,60 +1,66 @@
-.PHONY: start dev build test test-unit lint fmt kill web-install web-dev web-build infra-up infra-down docker-build migrate-diff migrate-apply migrate-status
+.PHONY: start clean-start build test t coverage test-unit lint fmt migrate-diff migrate-apply migrate-status
 
-# Start everything: infrastructure, Go hot-reload server, and Vite dev server.
-# Requires: air (go install github.com/air-verse/air@latest) and hivemind (brew install hivemind)
+# Run a command in the ci container without starting postgres.
+CI = docker compose run --rm --no-deps --build ci
+# Run a command in the ci container, starting postgres first (via depends_on).
+CI_DEPS = docker compose run --rm --build ci
+
+# Start everything in Docker: Postgres, Go API (air hot-reload), and Vite dev server.
 start:
-	docker compose up -d --wait --remove-orphans
-	hivemind
+	docker compose up --build --remove-orphans
 
-# Run only the API server in dev mode (no hot reload, no frontend).
-dev:
-	go run -tags dev ./cmd/server
+# Tear down volumes and start fresh.
+clean-start:
+	docker compose down -v
+	$(MAKE) start
 
-# Production build: compiles frontend then embeds it into the Go binary.
-build: web-build
-	go build -o bin/ask-howard ./cmd/server
+# Build the production Docker image.
+build:
+	docker build -t ask-howard:local .
 
+# Run functional tests (requires Docker socket for testcontainers).
 test:
-	go test -tags functional ./...
+	docker compose run --rm --no-deps --build \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		ci go test -tags functional ./...
+
+t:
+	docker compose run --rm --no-deps --build \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		ci sh -c 'gotestsum --format testname -- -tags functional -coverprofile=coverage.out -covermode=atomic ./... && go tool cover -func=coverage.out | tail -1'
+
+coverage:
+	docker compose run --rm --no-deps --build \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		ci sh -c 'gotestsum --format testname -- -tags functional -coverprofile=coverage.out -covermode=atomic ./... && go tool cover -func=coverage.out'
 
 test-unit:
-	go test ./...
+	$(CI) gotestsum --format testname ./...
 
 lint:
-	golangci-lint run ./...
+	$(CI) golangci-lint run ./...
 
 fmt:
-	golangci-lint fmt ./...
-
-kill:
-	@lsof -ti :8080 | xargs kill -9 2>/dev/null || true
-	@lsof -ti :5173 | xargs kill -9 2>/dev/null || true
-
-web-install:
-	cd web && npm install
-
-web-dev:
-	cd web && npm run dev
-
-web-build:
-	cd web && npm run build
-
-# Start local infrastructure (Postgres). Required before running tests.
-infra-up:
-	docker compose up -d --remove-orphans
-
-infra-down:
-	docker compose down
-
-docker-build:
-	docker build -t ask-howard:local .
+	$(CI) golangci-lint fmt ./...
 
 # Usage: make migrate-diff name=describe_your_change
 migrate-diff:
-	atlas migrate diff --config internal/adapter/outbound/postgres/atlas.hcl --env local "$(name)"
+	docker compose run --rm --build \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		ci atlas migrate diff \
+		--config internal/adapter/outbound/postgres/atlas.hcl \
+		--env local \
+		--var "database_url=postgres://ask-howard:ask-howard@postgres:5432/ask-howard?sslmode=disable" \
+		"$(name)"
 
 migrate-apply:
-	atlas migrate apply --config internal/adapter/outbound/postgres/atlas.hcl --env local
+	$(CI_DEPS) atlas migrate apply \
+		--config internal/adapter/outbound/postgres/atlas.hcl \
+		--env local \
+		--var "database_url=postgres://ask-howard:ask-howard@postgres:5432/ask-howard?sslmode=disable"
 
 migrate-status:
-	atlas migrate status --config internal/adapter/outbound/postgres/atlas.hcl --env local
+	$(CI_DEPS) atlas migrate status \
+		--config internal/adapter/outbound/postgres/atlas.hcl \
+		--env local \
+		--var "database_url=postgres://ask-howard:ask-howard@postgres:5432/ask-howard?sslmode=disable"
