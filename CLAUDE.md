@@ -21,8 +21,8 @@ internal/
 
 - **No stub-based unit tests for adapters.** Inbound and outbound adapters are tested with functional tests only.
 - Functional tests live alongside the handler code they test (e.g. `handler/health_test.go`), tagged `//go:build functional`.
-- Functional tests spin up real infrastructure via `testutil.NewPostgresContainer` (testcontainers-go).
-- `make test` runs functional tests (`-tags functional`). `make test-unit` runs unit tests only (no Docker needed).
+- Functional tests use `testutil.NewDatabase` which connects to the compose postgres via `TEST_DATABASE_URL`. Each test gets its own isolated database (created and dropped automatically). Falls back to testcontainers if `TEST_DATABASE_URL` is unset.
+- `make test` runs functional tests (`-tags functional`) against the compose postgres. `make test-unit` runs unit tests only.
 - Domain and service packages use plain unit tests with no build tag.
 - **Always run `make test` (functional) and `make lint` before considering a feature complete.** 
 

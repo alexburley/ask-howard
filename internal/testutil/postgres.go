@@ -43,8 +43,25 @@ func (c *postgresContainer) connStrFor(name string) string {
 		testDBUser, testDBPassword, c.host, c.port, name)
 }
 
+// getSharedContainer returns a connection to the test postgres instance.
+// When TEST_DATABASE_URL is set (e.g. inside the CI Docker container) it
+// connects directly to the compose postgres. Otherwise it starts a throwaway
+// testcontainer — useful for running tests locally without the stack.
 func getSharedContainer() (*postgresContainer, error) {
 	sharedOnce.Do(func() {
+		if url := os.Getenv("TEST_DATABASE_URL"); url != "" {
+			cfg, err := pgx.ParseConfig(url)
+			if err != nil {
+				sharedPGErr = fmt.Errorf("parse TEST_DATABASE_URL: %w", err)
+				return
+			}
+			sharedPG = &postgresContainer{
+				host: cfg.Host,
+				port: fmt.Sprintf("%d", cfg.Port),
+			}
+			return
+		}
+
 		ctx := context.Background()
 
 		c, err := postgres.Run(ctx,
@@ -80,14 +97,14 @@ func getSharedContainer() (*postgresContainer, error) {
 	return sharedPG, sharedPGErr
 }
 
-// NewDatabase creates a fresh database in the shared Postgres container,
+// NewDatabase creates a fresh database in the shared Postgres instance,
 // applies all migrations, and registers cleanup (drop) on t.
 func NewDatabase(t *testing.T) string {
 	t.Helper()
 
 	c, err := getSharedContainer()
 	if err != nil {
-		t.Fatalf("acquire shared postgres container: %v", err)
+		t.Fatalf("acquire shared postgres: %v", err)
 	}
 
 	ctx := context.Background()

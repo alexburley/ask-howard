@@ -22,21 +22,15 @@ clean-start:
 build:
 	docker build -t ask-howard:local .
 
-# Run functional tests (requires Docker socket for testcontainers).
+# Run functional tests against the compose postgres.
 test:
-	docker compose run --rm --no-deps --build \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		ci go test -tags functional ./...
+	$(CI_DEPS) go test -tags functional ./...
 
 t:
-	docker compose run --rm --no-deps --build \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		ci sh -c 'gotestsum --format testname -- -tags functional -coverprofile=coverage.out -covermode=atomic ./... && go tool cover -func=coverage.out | tail -1'
+	$(CI_DEPS) sh -c 'gotestsum --format testname -- -tags functional -coverprofile=coverage.out -covermode=atomic ./... && go tool cover -func=coverage.out | tail -1'
 
 coverage:
-	docker compose run --rm --no-deps --build \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		ci sh -c 'gotestsum --format testname -- -tags functional -coverprofile=coverage.out -covermode=atomic ./... && go tool cover -func=coverage.out'
+	$(CI_DEPS) sh -c 'gotestsum --format testname -- -tags functional -coverprofile=coverage.out -covermode=atomic ./... && go tool cover -func=coverage.out'
 
 test-unit:
 	$(CI) gotestsum --format testname ./...
