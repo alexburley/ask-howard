@@ -15,20 +15,21 @@ import (
 
 // Config holds the settings needed to connect to an S3-compatible store.
 type Config struct {
-	Endpoint     string
-	Bucket       string
-	Region       string
-	AccessKey    string
-	SecretKey    string
-	UsePathStyle bool
+	Endpoint        string
+	PresignEndpoint string // public-facing endpoint used in presigned URLs (e.g. localhost vs internal hostname)
+	Bucket          string
+	Region          string
+	AccessKey       string
+	SecretKey       string
+	UsePathStyle    bool
 }
 
 // Store is an S3-compatible ObjectStore backed by aws-sdk-go-v2. It works
 // against AWS S3, Scaleway Object Storage, and MinIO (path-style).
 type Store struct {
-	client  *s3.Client
-	presign *s3.PresignClient
-	bucket  string
+	client        *s3.Client
+	presignClient *s3.PresignClient
+	bucket        string
 }
 
 var _ outbound.ObjectStore = (*Store)(nil)
@@ -51,15 +52,24 @@ func NewStore(ctx context.Context, cfg *Config) (*Store, error) {
 		o.UsePathStyle = cfg.UsePathStyle
 	})
 
+	// Use a separate client for presigning when a public endpoint differs from the internal one.
+	presignBase := client
+	if cfg.PresignEndpoint != "" && cfg.PresignEndpoint != cfg.Endpoint {
+		presignBase = s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+			o.BaseEndpoint = aws.String(cfg.PresignEndpoint)
+			o.UsePathStyle = cfg.UsePathStyle
+		})
+	}
+
 	return &Store{
-		client:  client,
-		presign: s3.NewPresignClient(client),
-		bucket:  cfg.Bucket,
+		client:        client,
+		presignClient: s3.NewPresignClient(presignBase),
+		bucket:        cfg.Bucket,
 	}, nil
 }
 
 func (s *Store) PresignPut(ctx context.Context, key, contentType string, expiry time.Duration) (string, error) {
-	req, err := s.presign.PresignPutObject(ctx, &s3.PutObjectInput{
+	req, err := s.presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(key),
 		ContentType: aws.String(contentType),
@@ -71,7 +81,7 @@ func (s *Store) PresignPut(ctx context.Context, key, contentType string, expiry 
 }
 
 func (s *Store) PresignGet(ctx context.Context, key string, expiry time.Duration) (string, error) {
-	req, err := s.presign.PresignGetObject(ctx, &s3.GetObjectInput{
+	req, err := s.presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	}, s3.WithPresignExpires(expiry))

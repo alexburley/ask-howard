@@ -11,11 +11,14 @@ import (
 	"github.com/nickbryan/httputil"
 )
 
-func NewServer(logger *slog.Logger, db inbound.HealthChecker, authSvc inbound.AuthService, jwtSecret auth.JWTSecret) *httputil.Server {
+func NewServer(logger *slog.Logger, db inbound.HealthChecker, authSvc inbound.AuthService, docSvc inbound.DocumentService, jwtSecret auth.JWTSecret) *httputil.Server {
 	srv := httputil.NewServer(logger)
 
 	srv.Register(httputil.EndpointGroup(handler.HealthEndpoints(db)).WithPrefix("/api")...)
 	srv.Register(httputil.EndpointGroup(handler.AuthEndpoints(authSvc, jwtSecret)).WithPrefix("/api")...)
+	if docSvc != nil {
+		srv.Register(httputil.EndpointGroup(handler.DocumentEndpoints(docSvc, jwtSecret)).WithPrefix("/api")...)
+	}
 	srv.Register(httputil.Endpoint{
 		Method:  http.MethodGet,
 		Path:    "/",

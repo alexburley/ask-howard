@@ -1,0 +1,13 @@
+### Request an upload slot (requires auth cookie from auth.http)
+POST http://localhost:8080/api/documents/upload
+Content-Type: application/json
+
+{
+  "filename": "family-records.zip"
+}
+
+### Complete an upload (replace :id with the document_set_id from the slot response)
+POST http://localhost:8080/api/documents/sets/:id/complete
+
+### Poll the status of a document set
+GET http://localhost:8080/api/documents/sets/:id

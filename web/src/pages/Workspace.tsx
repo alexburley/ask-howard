@@ -1,4 +1,5 @@
 import { useAuth } from '../auth/AuthContext'
+import { UploadControl } from '../components/UploadControl'
 
 export function Workspace() {
   const { logout } = useAuth()
@@ -6,7 +7,7 @@ export function Workspace() {
   return (
     <div className="workspace-inner">
       <button className="sign-out" onClick={logout}>Sign out</button>
-      <p>Ask Howard</p>
+      <UploadControl />
     </div>
   )
 }

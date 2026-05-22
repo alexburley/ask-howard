@@ -23,6 +23,7 @@ services:
     environment:
       MINIO_ROOT_USER: ask-howard
       MINIO_ROOT_PASSWORD: ask-howard-secret
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -75,6 +76,7 @@ services:
       DATABASE_URL: postgres://ask-howard:ask-howard@postgres:5432/ask-howard?sslmode=disable
       VITE_URL: http://web:5173
       S3_ENDPOINT: http://minio:9000
+      S3_PRESIGN_ENDPOINT: http://localhost:9000
       S3_BUCKET: ask-howard-docs
       S3_REGION: us-east-1
       S3_ACCESS_KEY: ask-howard

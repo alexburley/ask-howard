@@ -14,7 +14,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (email, password_hash)
 VALUES ($1, $2)
-RETURNING id, email, password_hash, created_at, updated_at
+RETURNING id, email, password_hash, created_at, updated_at, last_login_at
 `
 
 type CreateUserParams struct {
@@ -31,12 +31,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastLoginAt,
 	)
 	return i, err
 }
 
 const findUserByEmail = `-- name: FindUserByEmail :one
-SELECT id, email, password_hash, created_at, updated_at FROM users
+SELECT id, email, password_hash, created_at, updated_at, last_login_at FROM users
 WHERE email = $1
 `
 
@@ -49,12 +50,13 @@ func (q *Queries) FindUserByEmail(ctx context.Context, email string) (User, erro
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastLoginAt,
 	)
 	return i, err
 }
 
 const findUserByID = `-- name: FindUserByID :one
-SELECT id, email, password_hash, created_at, updated_at FROM users
+SELECT id, email, password_hash, created_at, updated_at, last_login_at FROM users
 WHERE id = $1
 `
 
@@ -67,6 +69,7 @@ func (q *Queries) FindUserByID(ctx context.Context, id uuid.UUID) (User, error) 
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastLoginAt,
 	)
 	return i, err
 }

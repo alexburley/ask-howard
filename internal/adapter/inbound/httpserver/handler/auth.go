@@ -9,7 +9,6 @@ import (
 	"github.com/alexburley/ask-howard/internal/auth/token"
 	"github.com/alexburley/ask-howard/internal/domain"
 	"github.com/alexburley/ask-howard/internal/port/inbound"
-	"github.com/google/uuid"
 	"github.com/nickbryan/httputil"
 	"github.com/nickbryan/httputil/problem"
 )
@@ -107,22 +106,9 @@ func AuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil
 			Method: http.MethodGet,
 			Path:   "/auth/me",
 			Handler: httputil.NewHandler(func(r httputil.RequestEmpty) (*httputil.Response, error) {
-				rawID, err := token.Parse(r.Request, jwtSecret)
+				userID, err := currentUserID(r.Request, jwtSecret)
 				if err != nil {
-					return nil, &problem.DetailedError{
-						Type:   problemUnauthorizedType,
-						Title:  problemUnauthorizedTitle,
-						Status: http.StatusUnauthorized,
-					}
-				}
-
-				userID, err := uuid.Parse(rawID)
-				if err != nil {
-					return nil, &problem.DetailedError{
-						Type:   problemUnauthorizedType,
-						Title:  problemUnauthorizedTitle,
-						Status: http.StatusUnauthorized,
-					}
+					return nil, err
 				}
 
 				user, err := svc.GetByID(r.Context(), userID)

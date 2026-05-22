@@ -8,7 +8,19 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type DocumentSet struct {
+	ID               uuid.UUID
+	UserID           uuid.UUID
+	OriginalFilename string
+	Status           string
+	ObjectKey        string
+	Error            pgtype.Text
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
 
 type User struct {
 	ID           uuid.UUID
@@ -16,4 +28,5 @@ type User struct {
 	PasswordHash string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+	LastLoginAt  pgtype.Timestamptz
 }

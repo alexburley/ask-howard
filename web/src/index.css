@@ -113,6 +113,82 @@ body {
   color: #e5e5e5;
 }
 
+.upload-control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.upload-dropzone {
+  width: 320px;
+  height: 160px;
+  border: 2px dashed #333;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.upload-dropzone:hover {
+  border-color: #555;
+}
+
+.upload-dropzone-label {
+  color: #888;
+  font-size: 0.9rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+.upload-input-hidden {
+  display: none;
+}
+
+.upload-status {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.upload-status--success {
+  color: #86efac;
+}
+
+.upload-status--error {
+  color: #fca5a5;
+}
+
+.upload-progress-bar {
+  width: 280px;
+  height: 6px;
+  background: #2a2a2a;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  background: #e5e5e5;
+  transition: width 0.1s;
+}
+
+.upload-btn {
+  background: none;
+  border: 1px solid #333;
+  color: #888;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.upload-btn:hover {
+  border-color: #555;
+  color: #e5e5e5;
+}
+
 .health-banner {
   position: fixed;
   top: 0;

@@ -24,12 +24,13 @@ func loadConfig() config {
 		DatabaseURL: envOr("DATABASE_URL", "postgres://ask-howard:ask-howard@localhost:5432/ask-howard?sslmode=disable"),
 		JWTSecret:   auth.NewJWTSecret(os.Getenv("JWT_SECRET")),
 		S3: s3.Config{
-			Endpoint:     os.Getenv("S3_ENDPOINT"),
-			Bucket:       envOr("S3_BUCKET", "ask-howard-docs"),
-			Region:       envOr("S3_REGION", "us-east-1"),
-			AccessKey:    os.Getenv("S3_ACCESS_KEY"),
-			SecretKey:    os.Getenv("S3_SECRET_KEY"),
-			UsePathStyle: os.Getenv("S3_USE_PATH_STYLE") == "true",
+			Endpoint:        os.Getenv("S3_ENDPOINT"),
+			PresignEndpoint: os.Getenv("S3_PRESIGN_ENDPOINT"),
+			Bucket:          envOr("S3_BUCKET", "ask-howard-docs"),
+			Region:          envOr("S3_REGION", "us-east-1"),
+			AccessKey:       os.Getenv("S3_ACCESS_KEY"),
+			SecretKey:       os.Getenv("S3_SECRET_KEY"),
+			UsePathStyle:    os.Getenv("S3_USE_PATH_STYLE") == "true",
 		},
 	}
 }
@@ -69,12 +70,14 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("connect to object store: %w", err)
 	}
-	_ = objectStore // used by document service in US-11
 
 	userRepo := postgres.NewUserRepository(pool)
 	authSvc := service.NewAuthService(userRepo)
 
-	srv := httpserver.NewServer(logger, pool, authSvc, cfg.JWTSecret)
+	docRepo := postgres.NewDocumentRepository(pool)
+	docSvc := service.NewDocumentService(docRepo, objectStore)
+
+	srv := httpserver.NewServer(logger, pool, authSvc, docSvc, cfg.JWTSecret)
 	srv.Serve(ctx)
 	return nil
 }
