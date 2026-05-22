@@ -7,9 +7,9 @@ coverage.html
 go.work
 go.work.sum
 
-# Web build artifacts — keep the placeholder so go:embed compiles on a fresh clone
+# Web build artifacts — keep .gitkeep so go:embed all:dist compiles on a fresh clone
 web/dist/*
-!web/dist/index.html
+!web/dist/.gitkeep
 web/node_modules/
 web/test-results/
 
