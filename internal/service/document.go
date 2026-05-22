@@ -60,6 +60,10 @@ func (s *DocumentService) CompleteUpload(ctx context.Context, setID, userID uuid
 	}
 
 	if err := s.jobs.EnqueueExtraction(ctx, setID, userID); err != nil {
+		// Roll back the status so the set does not get stuck in PROCESSING.
+		if _, rollbackErr := s.docs.UpdateDocumentSetStatus(ctx, setID, domain.DocumentSetStatusFailed, "failed to enqueue extraction"); rollbackErr != nil {
+			return domain.DocumentSet{}, fmt.Errorf("enqueue extraction: %w; also failed to roll back status: %w", err, rollbackErr)
+		}
 		return domain.DocumentSet{}, fmt.Errorf("enqueue extraction: %w", err)
 	}
 
