@@ -67,7 +67,7 @@ func (q *Queries) DeleteDocumentsBySetID(ctx context.Context, setID uuid.UUID) e
 }
 
 const getDocumentByIDAndUser = `-- name: GetDocumentByIDAndUser :one
-SELECT id, set_id, user_id, filename, content_type, size_bytes, object_key, canvas_x, canvas_y, created_at, updated_at FROM documents
+SELECT id, set_id, user_id, filename, content_type, size_bytes, object_key, created_at, updated_at FROM documents
 WHERE id = $1 AND user_id = $2
 `
 
@@ -87,8 +87,6 @@ func (q *Queries) GetDocumentByIDAndUser(ctx context.Context, arg GetDocumentByI
 		&i.ContentType,
 		&i.SizeBytes,
 		&i.ObjectKey,
-		&i.CanvasX,
-		&i.CanvasY,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -124,7 +122,7 @@ func (q *Queries) GetDocumentSetByIDAndUser(ctx context.Context, arg GetDocument
 const insertDocument = `-- name: InsertDocument :one
 INSERT INTO documents (set_id, user_id, filename, content_type, size_bytes, object_key)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, set_id, user_id, filename, content_type, size_bytes, object_key, canvas_x, canvas_y, created_at, updated_at
+RETURNING id, set_id, user_id, filename, content_type, size_bytes, object_key, created_at, updated_at
 `
 
 type InsertDocumentParams struct {
@@ -154,8 +152,6 @@ func (q *Queries) InsertDocument(ctx context.Context, arg InsertDocumentParams) 
 		&i.ContentType,
 		&i.SizeBytes,
 		&i.ObjectKey,
-		&i.CanvasX,
-		&i.CanvasY,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -163,7 +159,7 @@ func (q *Queries) InsertDocument(ctx context.Context, arg InsertDocumentParams) 
 }
 
 const listDocumentsByUser = `-- name: ListDocumentsByUser :many
-SELECT id, set_id, user_id, filename, content_type, size_bytes, object_key, canvas_x, canvas_y, created_at, updated_at FROM documents
+SELECT id, set_id, user_id, filename, content_type, size_bytes, object_key, created_at, updated_at FROM documents
 WHERE user_id = $1
 ORDER BY created_at ASC
 `
@@ -185,8 +181,6 @@ func (q *Queries) ListDocumentsByUser(ctx context.Context, userID uuid.UUID) ([]
 			&i.ContentType,
 			&i.SizeBytes,
 			&i.ObjectKey,
-			&i.CanvasX,
-			&i.CanvasY,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

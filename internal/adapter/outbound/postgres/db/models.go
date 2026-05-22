@@ -19,8 +19,6 @@ type Document struct {
 	ContentType string
 	SizeBytes   int64
 	ObjectKey   string
-	CanvasX     pgtype.Float8
-	CanvasY     pgtype.Float8
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

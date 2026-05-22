@@ -32,14 +32,6 @@ table "documents" {
     null = false
     type = text
   }
-  column "canvas_x" {
-    null = true
-    type = double_precision
-  }
-  column "canvas_y" {
-    null = true
-    type = double_precision
-  }
   column "created_at" {
     null    = false
     type    = timestamptz
