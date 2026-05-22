@@ -13,15 +13,15 @@ async function parseProblem(res: Response): Promise<ApiProblem> {
 }
 
 export async function fetchMe(): Promise<AuthUser | null> {
+  let res: Response
   try {
-    const res = await fetch('/api/auth/me')
-    if (res.status === 401) return null
-    if (!res.ok) throw new AuthError('NETWORK_ERROR', 'Failed to fetch session')
-    return res.json()
-  } catch (err) {
-    if (err instanceof AuthError) throw err
-    return null
+    res = await fetch('/api/auth/me')
+  } catch {
+    throw new AuthError('NETWORK_ERROR', 'Failed to reach the server')
   }
+  if (res.status === 401) return null
+  if (!res.ok) throw new AuthError('NETWORK_ERROR', 'Failed to fetch session')
+  return res.json()
 }
 
 export async function apiLogin(email: string, password: string): Promise<AuthUser> {
