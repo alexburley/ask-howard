@@ -4,18 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/alexburley/ask-howard/internal/auth"
 	"github.com/alexburley/ask-howard/internal/domain"
 	"github.com/alexburley/ask-howard/internal/port/inbound"
-	"github.com/alexburley/ask-howard/internal/port/outbound"
 	"github.com/google/uuid"
 	"github.com/nickbryan/httputil"
 	"github.com/nickbryan/httputil/problem"
 )
-
-const presignGetExpiry = 15 * time.Minute
 
 type uploadRequestBody struct {
 	Filename string `json:"filename" validate:"required"`
@@ -49,7 +45,7 @@ type setIDParams struct {
 
 // DocumentEndpoints returns the document endpoints. All endpoints require a
 // valid JWT — apply NewAuthGuard to this group when registering with the server.
-func DocumentEndpoints(svc inbound.DocumentService, store outbound.ObjectStore) []httputil.Endpoint {
+func DocumentEndpoints(svc inbound.DocumentService) []httputil.Endpoint {
 	return []httputil.Endpoint{
 		{
 			Method: http.MethodPost,
@@ -139,16 +135,12 @@ func DocumentEndpoints(svc inbound.DocumentService, store outbound.ObjectStore) 
 
 				resp := make([]documentResponse, 0, len(docs))
 				for i := range docs {
-					presignedURL, presignErr := store.PresignGet(r.Context(), docs[i].ObjectKey, presignGetExpiry)
-					if presignErr != nil {
-						return nil, fmt.Errorf("presign get for %s: %w", docs[i].ID, presignErr)
-					}
 					resp = append(resp, documentResponse{
 						ID:           docs[i].ID.String(),
 						Filename:     docs[i].Filename,
 						ContentType:  docs[i].ContentType,
 						SizeBytes:    docs[i].SizeBytes,
-						PresignedURL: presignedURL,
+						PresignedURL: docs[i].PresignedURL,
 					})
 				}
 

@@ -18,9 +18,14 @@ type DocumentSetWithCount struct {
 	DocumentCount int64
 }
 
+type DocumentWithURL struct {
+	domain.Document
+	PresignedURL string
+}
+
 type DocumentService interface {
 	CreateUploadSlot(ctx context.Context, userID uuid.UUID, filename string) (UploadSlotResult, error)
 	CompleteUpload(ctx context.Context, setID, userID uuid.UUID) (domain.DocumentSet, error)
 	GetDocumentSet(ctx context.Context, setID, userID uuid.UUID) (DocumentSetWithCount, error)
-	ListDocuments(ctx context.Context, userID uuid.UUID) ([]domain.Document, error)
+	ListDocuments(ctx context.Context, userID uuid.UUID) ([]DocumentWithURL, error)
 }

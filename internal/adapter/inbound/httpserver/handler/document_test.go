@@ -63,7 +63,7 @@ func (s *DocumentSuite) SetupSuite() {
 	authSvc := service.NewAuthService(postgres.NewUserRepository(s.Pool))
 	docSvc := service.NewDocumentService(docRepo, store, &noopEnqueuer{})
 
-	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), s.Pool, authSvc, docSvc, store, testJWTSecret)
+	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), s.Pool, authSvc, docSvc, testJWTSecret)
 	s.server = httptest.NewServer(srv)
 }
 

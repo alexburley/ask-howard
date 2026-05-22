@@ -80,10 +80,21 @@ func (s *DocumentService) GetDocumentSet(ctx context.Context, setID, userID uuid
 	return inbound.DocumentSetWithCount{DocumentSet: set, DocumentCount: count}, nil
 }
 
-func (s *DocumentService) ListDocuments(ctx context.Context, userID uuid.UUID) ([]domain.Document, error) {
+const presignGetExpiry = 15 * time.Minute
+
+func (s *DocumentService) ListDocuments(ctx context.Context, userID uuid.UUID) ([]inbound.DocumentWithURL, error) {
 	docs, err := s.docs.ListDocumentsByUser(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("list documents: %w", err)
 	}
-	return docs, nil
+
+	result := make([]inbound.DocumentWithURL, 0, len(docs))
+	for i := range docs {
+		url, err := s.store.PresignGet(ctx, docs[i].ObjectKey, presignGetExpiry)
+		if err != nil {
+			return nil, fmt.Errorf("presign get for %s: %w", docs[i].ID, err)
+		}
+		result = append(result, inbound.DocumentWithURL{Document: docs[i], PresignedURL: url})
+	}
+	return result, nil
 }

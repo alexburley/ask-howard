@@ -102,7 +102,7 @@ func run(logger *slog.Logger) error {
 
 	docSvc := service.NewDocumentService(docRepo, objectStore, jobClient)
 
-	srv := httpserver.NewServer(logger, pool, authSvc, docSvc, objectStore, cfg.JWTSecret)
+	srv := httpserver.NewServer(logger, pool, authSvc, docSvc, cfg.JWTSecret)
 	srv.Serve(ctx)
 	return nil
 }
