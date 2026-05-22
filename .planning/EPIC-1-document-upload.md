@@ -22,61 +22,10 @@ safe, durable background extraction, per-user scoping) unblocks every subsequent
 
 ---
 
-## US-10 — Local document storage
+## ~~US-10 — Local document storage~~ ✓ Done
 
-**As a** developer,
-**I want** a working S3-compatible object store in the local stack,
-**So that** the upload and extraction features have durable blob storage to build on.
-
-This is an infrastructure story with no frontend component; it earns its place by being
-the prerequisite for every other story in the epic and by shipping a functional test that
-proves the adapter works.
-
-### Acceptance Criteria
-
-1. `docker-compose.yml` defines a `minio` service (API `:9000`, console `:9001`) with a
-   named volume and a healthcheck.
-2. A one-shot `minio-init` service creates the `ask-howard-docs` bucket on startup
-   (idempotent — safe to re-run).
-3. The `api` service receives S3 env vars (`S3_ENDPOINT`, `S3_BUCKET`, `S3_REGION`,
-   `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_USE_PATH_STYLE`) and waits for `minio-init`.
-4. The `ci` service receives matching `TEST_S3_*` env vars.
-5. `internal/port/outbound.ObjectStore` defines `PresignPut`, `PresignGet`, `Get`, `Put`,
-   `Delete`.
-6. `internal/adapter/outbound/s3.Store` implements the port; asserts the interface at
-   compile time.
-7. Config is read in `cmd/server/main.go` and the store is constructed at startup.
-
-**Functional tests** (`//go:build functional`, `make test`):
-
-8. `Put` → `Get` → `Delete` round-trip returns the original bytes; a subsequent `Get`
-   errors.
-9. `PresignPut` returns a URL that accepts an HTTP PUT; `PresignGet` returns a URL that
-   returns the same bytes.
-10. Tests skip when `TEST_S3_ENDPOINT` is unset (unit runs unaffected).
-
-### Out of Scope
-
-- CORS config (needed for browser PUT — addressed in US-11).
-- Any document metadata or database tables (US-11/US-12).
-
-### Implementation Notes
-
-- MinIO uses `minio/minio` + `minio/mc` init container (`mc mb --ignore-existing`).
-- S3 adapter: `aws-sdk-go-v2/config`, `credentials.StaticCredentialsProvider`,
-  `s3.NewFromConfig` with `o.UsePathStyle = true` and `o.BaseEndpoint`.
-- Add `minio_data` named volume.
-
-### Files
-
-| File | Action |
-|------|--------|
-| `docker-compose.yml` | Update — `minio`, `minio-init` services; env on `api`/`ci`; `minio_data` volume |
-| `internal/port/outbound/objectstore.go` | Create |
-| `internal/adapter/outbound/s3/store.go` | Create |
-| `internal/adapter/outbound/s3/store_test.go` | Create (functional) |
-| `cmd/server/main.go` | Update — `s3.Config` in `loadConfig`; construct store |
-| `go.mod` / `go.sum` | Update — `aws-sdk-go-v2` |
+Archived → [`.archive/EPIC-1/US-10-local-document-storage.md`](../.archive/EPIC-1/US-10-local-document-storage.md)
+Commit: `1acce9a`
 
 ---
 
