@@ -3,23 +3,23 @@ export type DocumentSetStatus = 'UPLOADING' | 'PROCESSING' | 'READY' | 'FAILED'
 export type DocumentSet = {
   id: string
   status: DocumentSetStatus
-  original_filename: string
+  originalFilename: string
   error?: string
 }
 
 export type UploadSlot = {
-  document_set_id: string
-  presigned_url: string
-  object_key: string
+  documentSetId: string
+  presignedUrl: string
+  objectKey: string
 }
 
 export type DocumentResponse = {
   id: string
   filename: string
-  content_type: string
-  size_bytes: number
-  presigned_url: string
-  presigned_url_expires_at: string
+  contentType: string
+  sizeBytes: number
+  presignedUrl: string
+  presignedUrlExpiresAt: string
 }
 
 export type DocumentErrorCode = 'UNAUTHORIZED' | 'NOT_FOUND' | 'NETWORK_ERROR'

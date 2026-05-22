@@ -26,7 +26,7 @@ export function useDocuments() {
 
       if (docs.length > 0) {
         const earliestExpiry = Math.min(
-          ...docs.map((d) => new Date(d.presigned_url_expires_at).getTime()),
+          ...docs.map((d) => new Date(d.presignedUrlExpiresAt).getTime()),
         )
         const refreshAt = earliestExpiry - Date.now() - EXPIRY_BUFFER_MS
         if (refreshAt > 0) {

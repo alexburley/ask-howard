@@ -1,5 +1,55 @@
 import { DocumentError, DocumentResponse, DocumentSet, UploadSlot } from './types'
 
+type WireDocumentSet = {
+  id: string
+  status: string
+  original_filename: string
+  error?: string
+}
+
+type WireUploadSlot = {
+  document_set_id: string
+  presigned_url: string
+  object_key: string
+}
+
+type WireDocument = {
+  id: string
+  filename: string
+  content_type: string
+  size_bytes: number
+  presigned_url: string
+  presigned_url_expires_at: string
+}
+
+function toDocumentSet(w: WireDocumentSet): DocumentSet {
+  return {
+    id: w.id,
+    status: w.status as DocumentSet['status'],
+    originalFilename: w.original_filename,
+    error: w.error,
+  }
+}
+
+function toUploadSlot(w: WireUploadSlot): UploadSlot {
+  return {
+    documentSetId: w.document_set_id,
+    presignedUrl: w.presigned_url,
+    objectKey: w.object_key,
+  }
+}
+
+function toDocument(w: WireDocument): DocumentResponse {
+  return {
+    id: w.id,
+    filename: w.filename,
+    contentType: w.content_type,
+    sizeBytes: w.size_bytes,
+    presignedUrl: w.presigned_url,
+    presignedUrlExpiresAt: w.presigned_url_expires_at,
+  }
+}
+
 export async function requestUploadSlot(filename: string): Promise<UploadSlot> {
   let res: Response
   try {
@@ -14,7 +64,7 @@ export async function requestUploadSlot(filename: string): Promise<UploadSlot> {
 
   if (res.status === 401) throw new DocumentError('UNAUTHORIZED', 'Not authenticated')
   if (!res.ok) throw new DocumentError('NETWORK_ERROR', 'Failed to request upload slot')
-  return res.json()
+  return toUploadSlot(await res.json())
 }
 
 export async function uploadToPresignedUrl(
@@ -53,7 +103,7 @@ export async function completeUpload(setID: string): Promise<DocumentSet> {
   if (res.status === 401) throw new DocumentError('UNAUTHORIZED', 'Not authenticated')
   if (res.status === 404) throw new DocumentError('NOT_FOUND', 'Document set not found')
   if (!res.ok) throw new DocumentError('NETWORK_ERROR', 'Failed to complete upload')
-  return res.json()
+  return toDocumentSet(await res.json())
 }
 
 export async function listDocuments(): Promise<DocumentResponse[]> {
@@ -66,7 +116,8 @@ export async function listDocuments(): Promise<DocumentResponse[]> {
 
   if (res.status === 401) throw new DocumentError('UNAUTHORIZED', 'Not authenticated')
   if (!res.ok) throw new DocumentError('NETWORK_ERROR', 'Failed to fetch documents')
-  return res.json()
+  const wire: WireDocument[] = await res.json()
+  return wire.map(toDocument)
 }
 
 export async function pollDocumentSet(setID: string): Promise<DocumentSet> {
@@ -80,5 +131,5 @@ export async function pollDocumentSet(setID: string): Promise<DocumentSet> {
   if (res.status === 401) throw new DocumentError('UNAUTHORIZED', 'Not authenticated')
   if (res.status === 404) throw new DocumentError('NOT_FOUND', 'Document set not found')
   if (!res.ok) throw new DocumentError('NETWORK_ERROR', 'Failed to fetch document set')
-  return res.json()
+  return toDocumentSet(await res.json())
 }

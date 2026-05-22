@@ -35,10 +35,10 @@ function DocumentNode({ data }: { data: DocumentNodeData }) {
   const { doc } = data
   return (
     <div className="doc-node">
-      {isImage(doc.content_type) ? (
-        <img src={doc.presigned_url} alt={doc.filename} className="doc-node-thumb" />
+      {isImage(doc.contentType) ? (
+        <img src={doc.presignedUrl} alt={doc.filename} className="doc-node-thumb" />
       ) : (
-        <div className="doc-node-icon">{fileIcon(doc.content_type)}</div>
+        <div className="doc-node-icon">{fileIcon(doc.contentType)}</div>
       )}
       <p className="doc-node-name">{doc.filename}</p>
     </div>

@@ -12,13 +12,13 @@ function formatBytes(bytes: number): string {
 }
 
 function Preview({ doc }: { doc: DocumentResponse }) {
-  if (doc.content_type.startsWith('image/')) {
-    return <img src={doc.presigned_url} alt={doc.filename} className="detail-preview-image" />
+  if (doc.contentType.startsWith('image/')) {
+    return <img src={doc.presignedUrl} alt={doc.filename} className="detail-preview-image" />
   }
-  if (doc.content_type === 'application/pdf') {
+  if (doc.contentType === 'application/pdf') {
     return (
       <iframe
-        src={doc.presigned_url}
+        src={doc.presignedUrl}
         title={doc.filename}
         className="detail-preview-pdf"
       />
@@ -46,11 +46,11 @@ export function DocumentDetail({ doc, onClose }: Props) {
       <div className="detail-meta">
         <div className="detail-meta-row">
           <span className="detail-meta-label">Type</span>
-          <span className="detail-meta-value">{doc.content_type}</span>
+          <span className="detail-meta-value">{doc.contentType}</span>
         </div>
         <div className="detail-meta-row">
           <span className="detail-meta-label">Size</span>
-          <span className="detail-meta-value">{formatBytes(doc.size_bytes)}</span>
+          <span className="detail-meta-value">{formatBytes(doc.sizeBytes)}</span>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export function DocumentDetail({ doc, onClose }: Props) {
       <div className="detail-tags-seam" />
 
       <a
-        href={doc.presigned_url}
+        href={doc.presignedUrl}
         download={doc.filename}
         className="detail-download"
       >

@@ -22,11 +22,11 @@ export function useUpload(onReady?: () => void) {
     try {
       const slot = await requestUploadSlot(file.name)
 
-      await uploadToPresignedUrl(slot.presigned_url, file, (pct) => {
+      await uploadToPresignedUrl(slot.presignedUrl, file, (pct) => {
         if (!cancelledRef.current) setState({ phase: 'uploading', progress: pct })
       })
 
-      const set = await completeUpload(slot.document_set_id)
+      const set = await completeUpload(slot.documentSetId)
       if (!cancelledRef.current) setState({ phase: 'processing', setID: set.id })
 
       await pollUntilDone(set.id)
