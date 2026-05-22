@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/alexburley/ask-howard/internal/adapter/inbound/httpserver"
 	"github.com/alexburley/ask-howard/internal/adapter/outbound/postgres"
+	"github.com/alexburley/ask-howard/internal/adapter/outbound/s3"
 	"github.com/alexburley/ask-howard/internal/auth"
 	"github.com/alexburley/ask-howard/internal/service"
 )
@@ -14,12 +16,21 @@ import (
 type config struct {
 	DatabaseURL string
 	JWTSecret   auth.JWTSecret
+	S3          s3.Config
 }
 
 func loadConfig() config {
 	return config{
 		DatabaseURL: envOr("DATABASE_URL", "postgres://ask-howard:ask-howard@localhost:5432/ask-howard?sslmode=disable"),
 		JWTSecret:   auth.NewJWTSecret(os.Getenv("JWT_SECRET")),
+		S3: s3.Config{
+			Endpoint:     os.Getenv("S3_ENDPOINT"),
+			Bucket:       envOr("S3_BUCKET", "ask-howard-docs"),
+			Region:       envOr("S3_REGION", "us-east-1"),
+			AccessKey:    os.Getenv("S3_ACCESS_KEY"),
+			SecretKey:    os.Getenv("S3_SECRET_KEY"),
+			UsePathStyle: os.Getenv("S3_USE_PATH_STYLE") == "true",
+		},
 	}
 }
 
@@ -32,7 +43,13 @@ func envOr(key, fallback string) string {
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	if err := run(logger); err != nil {
+		logger.Error("fatal", "error", err)
+		os.Exit(1)
+	}
+}
 
+func run(logger *slog.Logger) error {
 	cfg := loadConfig()
 
 	if cfg.JWTSecret.IsZero() {
@@ -44,14 +61,20 @@ func main() {
 
 	pool, err := postgres.NewPool(ctx, cfg.DatabaseURL)
 	if err != nil {
-		logger.Error("connect to database", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("connect to database: %w", err)
 	}
 	defer pool.Close()
+
+	objectStore, err := s3.NewStore(ctx, &cfg.S3)
+	if err != nil {
+		return fmt.Errorf("connect to object store: %w", err)
+	}
+	_ = objectStore // used by document service in US-11
 
 	userRepo := postgres.NewUserRepository(pool)
 	authSvc := service.NewAuthService(userRepo)
 
 	srv := httpserver.NewServer(logger, pool, authSvc, cfg.JWTSecret)
 	srv.Serve(ctx)
+	return nil
 }
