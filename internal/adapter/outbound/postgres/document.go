@@ -28,7 +28,7 @@ func (r *DocumentRepository) CreateDocumentSet(ctx context.Context, params outbo
 	row, err := r.queries.CreateDocumentSet(ctx, db.CreateDocumentSetParams{
 		UserID:           params.UserID,
 		OriginalFilename: params.OriginalFilename,
-		Status:           params.Status,
+		Status:           string(params.Status),
 		ObjectKey:        params.ObjectKey,
 	})
 	if err != nil {
@@ -51,10 +51,10 @@ func (r *DocumentRepository) GetDocumentSetByIDAndUser(ctx context.Context, id, 
 	return toDomainDocumentSet(&row), nil
 }
 
-func (r *DocumentRepository) UpdateDocumentSetStatus(ctx context.Context, id uuid.UUID, status, errorMsg string) (domain.DocumentSet, error) {
+func (r *DocumentRepository) UpdateDocumentSetStatus(ctx context.Context, id uuid.UUID, status domain.DocumentSetStatus, errorMsg string) (domain.DocumentSet, error) {
 	row, err := r.queries.UpdateDocumentSetStatus(ctx, db.UpdateDocumentSetStatusParams{
 		ID:     id,
-		Status: status,
+		Status: string(status),
 		Error:  pgtype.Text{String: errorMsg, Valid: errorMsg != ""},
 	})
 	if err != nil {
@@ -135,7 +135,7 @@ func toDomainDocumentSet(ds *db.DocumentSet) domain.DocumentSet {
 		ID:               ds.ID,
 		UserID:           ds.UserID,
 		OriginalFilename: ds.OriginalFilename,
-		Status:           ds.Status,
+		Status:           domain.DocumentSetStatus(ds.Status),
 		ObjectKey:        ds.ObjectKey,
 		Error:            ds.Error.String,
 		CreatedAt:        ds.CreatedAt,

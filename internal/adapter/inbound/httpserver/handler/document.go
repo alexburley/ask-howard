@@ -91,7 +91,7 @@ func DocumentEndpoints(svc inbound.DocumentService, store outbound.ObjectStore) 
 
 				return httputil.OK(documentSetResponse{
 					ID:               set.ID.String(),
-					Status:           set.Status,
+					Status:           string(set.Status),
 					OriginalFilename: set.OriginalFilename,
 					DocumentCount:    0,
 				})
@@ -116,7 +116,7 @@ func DocumentEndpoints(svc inbound.DocumentService, store outbound.ObjectStore) 
 
 				return httputil.OK(documentSetResponse{
 					ID:               result.ID.String(),
-					Status:           result.Status,
+					Status:           string(result.Status),
 					OriginalFilename: result.OriginalFilename,
 					DocumentCount:    result.DocumentCount,
 					Error:            result.Error,

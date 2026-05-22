@@ -10,7 +10,7 @@ import (
 type CreateDocumentSetParams struct {
 	UserID           uuid.UUID
 	OriginalFilename string
-	Status           string
+	Status           domain.DocumentSetStatus
 	ObjectKey        string
 }
 
@@ -26,7 +26,7 @@ type InsertDocumentParams struct {
 type DocumentRepository interface {
 	CreateDocumentSet(ctx context.Context, params CreateDocumentSetParams) (domain.DocumentSet, error)
 	GetDocumentSetByIDAndUser(ctx context.Context, id, userID uuid.UUID) (domain.DocumentSet, error)
-	UpdateDocumentSetStatus(ctx context.Context, id uuid.UUID, status, errorMsg string) (domain.DocumentSet, error)
+	UpdateDocumentSetStatus(ctx context.Context, id uuid.UUID, status domain.DocumentSetStatus, errorMsg string) (domain.DocumentSet, error)
 	InsertDocument(ctx context.Context, params *InsertDocumentParams) (domain.Document, error)
 	ListDocumentsByUser(ctx context.Context, userID uuid.UUID) ([]domain.Document, error)
 	GetDocumentByIDAndUser(ctx context.Context, id, userID uuid.UUID) (domain.Document, error)

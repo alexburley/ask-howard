@@ -7,11 +7,13 @@ import (
 	"github.com/google/uuid"
 )
 
+type DocumentSetStatus string
+
 const (
-	DocumentSetStatusUploading  = "UPLOADING"
-	DocumentSetStatusProcessing = "PROCESSING"
-	DocumentSetStatusReady      = "READY"
-	DocumentSetStatusFailed     = "FAILED"
+	DocumentSetStatusUploading  DocumentSetStatus = "UPLOADING"
+	DocumentSetStatusProcessing DocumentSetStatus = "PROCESSING"
+	DocumentSetStatusReady      DocumentSetStatus = "READY"
+	DocumentSetStatusFailed     DocumentSetStatus = "FAILED"
 )
 
 var (
@@ -35,7 +37,7 @@ type DocumentSet struct {
 	ID               uuid.UUID
 	UserID           uuid.UUID
 	OriginalFilename string
-	Status           string
+	Status           DocumentSetStatus
 	ObjectKey        string
 	Error            string
 	CreatedAt        time.Time
