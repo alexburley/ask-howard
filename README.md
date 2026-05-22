@@ -138,6 +138,12 @@ Builds the production Docker image tagged `ask-howard:local`. The multi-stage `D
 | Postgres   | 5432 | ask-howard / ask-howard / ask-howard         |
 | API        | 8080 | Go binary via `air` hot-reload (`-tags dev`) |
 | Web        | 5173 | Vite dev server with HMR                     |
+| MinIO      | 9000 / 9001 | S3-compatible object store / console   |
+
+> **Adding npm packages:** the web container uses a named Docker volume for `node_modules`. After running `npm install` on the host, reset the volume so the container picks up the new packages:
+> ```bash
+> docker compose rm -f web && docker volume rm ask-howard_web_node_modules && docker compose up -d web
+> ```
 | Playwright | —    | Profile `e2e` only — started by `make e2e`  |
 
 ## Key dependencies
