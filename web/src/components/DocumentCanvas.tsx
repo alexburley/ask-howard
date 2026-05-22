@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { ReactFlow, Background, Controls, type Node, type NodeMouseHandler } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { DocumentResponse } from '../documents/types'
@@ -12,7 +12,7 @@ type Props = {
   onNodeClick?: (doc: DocumentResponse) => void
 }
 
-function scatter(index: number): { x: number; y: number } {
+function computePosition(index: number): { x: number; y: number } {
   const cols = 4
   const col = index % cols
   const row = Math.floor(index / cols)
@@ -48,20 +48,23 @@ function DocumentNode({ data }: { data: DocumentNodeData }) {
 const nodeTypes = { document: DocumentNode }
 
 export function DocumentCanvas({ documents, onNodeClick }: Props) {
+  const positions = useRef<Map<string, { x: number; y: number }>>(new Map())
+
   const nodes: Node<DocumentNodeData>[] = useMemo(
     () =>
       documents.map((doc, i) => {
-        const pos = scatter(i)
+        if (!positions.current.has(doc.id)) {
+          positions.current.set(doc.id, computePosition(i))
+        }
         return {
           id: doc.id,
           type: 'document',
-          position: pos,
+          position: positions.current.get(doc.id)!,
           data: { doc },
           draggable: true,
         }
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [documents.map((d) => d.id).join(',')],
+    [documents],
   )
 
   const handleNodeClick: NodeMouseHandler<Node<DocumentNodeData>> = useCallback(
