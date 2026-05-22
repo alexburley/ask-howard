@@ -13,8 +13,14 @@ type UploadSlotResult struct {
 	ObjectKey     string
 }
 
+type DocumentSetWithCount struct {
+	domain.DocumentSet
+	DocumentCount int64
+}
+
 type DocumentService interface {
 	CreateUploadSlot(ctx context.Context, userID uuid.UUID, filename string) (UploadSlotResult, error)
 	CompleteUpload(ctx context.Context, setID, userID uuid.UUID) (domain.DocumentSet, error)
-	GetDocumentSet(ctx context.Context, setID, userID uuid.UUID) (domain.DocumentSet, error)
+	GetDocumentSet(ctx context.Context, setID, userID uuid.UUID) (DocumentSetWithCount, error)
+	ListDocuments(ctx context.Context, userID uuid.UUID) ([]domain.Document, error)
 }

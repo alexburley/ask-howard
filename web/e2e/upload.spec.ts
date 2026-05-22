@@ -6,10 +6,10 @@ function uniqueEmail() {
 }
 
 const PASSWORD = 'password123'
-const TEST_ZIP = join(__dirname, 'fixtures', 'test.zip')
+const TEST_ZIP = join(__dirname, 'fixtures', 'test-content.zip')
 
 test.describe('Upload', () => {
-  test('registers, uploads a zip, and sees processing state', async ({ page }) => {
+  test('registers, uploads a zip, and sees processing then ready state', async ({ page }) => {
     const email = uniqueEmail()
 
     await page.goto('/')
@@ -25,6 +25,10 @@ test.describe('Upload', () => {
     ])
     await fileChooser.setFiles(TEST_ZIP)
 
-    await expect(page.getByText(/Uploading|Processing|Upload complete/)).toBeVisible({ timeout: 15000 })
+    // Should show uploading or processing
+    await expect(page.getByText(/Uploading|Processing your documents/)).toBeVisible({ timeout: 10000 })
+
+    // Should eventually reach ready state with document count
+    await expect(page.getByText(/document.*ready/)).toBeVisible({ timeout: 30000 })
   })
 })

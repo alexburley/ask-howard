@@ -12,6 +12,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countDocumentsBySetID = `-- name: CountDocumentsBySetID :one
+SELECT COUNT(*) FROM documents WHERE set_id = $1
+`
+
+func (q *Queries) CountDocumentsBySetID(ctx context.Context, setID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countDocumentsBySetID, setID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createDocumentSet = `-- name: CreateDocumentSet :one
 INSERT INTO document_sets (user_id, original_filename, status, object_key)
 VALUES ($1, $2, $3, $4)
@@ -46,6 +57,44 @@ func (q *Queries) CreateDocumentSet(ctx context.Context, arg CreateDocumentSetPa
 	return i, err
 }
 
+const deleteDocumentsBySetID = `-- name: DeleteDocumentsBySetID :exec
+DELETE FROM documents WHERE set_id = $1
+`
+
+func (q *Queries) DeleteDocumentsBySetID(ctx context.Context, setID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteDocumentsBySetID, setID)
+	return err
+}
+
+const getDocumentByIDAndUser = `-- name: GetDocumentByIDAndUser :one
+SELECT id, set_id, user_id, filename, content_type, size_bytes, object_key, canvas_x, canvas_y, created_at, updated_at FROM documents
+WHERE id = $1 AND user_id = $2
+`
+
+type GetDocumentByIDAndUserParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) GetDocumentByIDAndUser(ctx context.Context, arg GetDocumentByIDAndUserParams) (Document, error) {
+	row := q.db.QueryRow(ctx, getDocumentByIDAndUser, arg.ID, arg.UserID)
+	var i Document
+	err := row.Scan(
+		&i.ID,
+		&i.SetID,
+		&i.UserID,
+		&i.Filename,
+		&i.ContentType,
+		&i.SizeBytes,
+		&i.ObjectKey,
+		&i.CanvasX,
+		&i.CanvasY,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getDocumentSetByIDAndUser = `-- name: GetDocumentSetByIDAndUser :one
 SELECT id, user_id, original_filename, status, object_key, error, created_at, updated_at FROM document_sets
 WHERE id = $1 AND user_id = $2
@@ -70,6 +119,85 @@ func (q *Queries) GetDocumentSetByIDAndUser(ctx context.Context, arg GetDocument
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const insertDocument = `-- name: InsertDocument :one
+INSERT INTO documents (set_id, user_id, filename, content_type, size_bytes, object_key)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, set_id, user_id, filename, content_type, size_bytes, object_key, canvas_x, canvas_y, created_at, updated_at
+`
+
+type InsertDocumentParams struct {
+	SetID       uuid.UUID
+	UserID      uuid.UUID
+	Filename    string
+	ContentType string
+	SizeBytes   int64
+	ObjectKey   string
+}
+
+func (q *Queries) InsertDocument(ctx context.Context, arg InsertDocumentParams) (Document, error) {
+	row := q.db.QueryRow(ctx, insertDocument,
+		arg.SetID,
+		arg.UserID,
+		arg.Filename,
+		arg.ContentType,
+		arg.SizeBytes,
+		arg.ObjectKey,
+	)
+	var i Document
+	err := row.Scan(
+		&i.ID,
+		&i.SetID,
+		&i.UserID,
+		&i.Filename,
+		&i.ContentType,
+		&i.SizeBytes,
+		&i.ObjectKey,
+		&i.CanvasX,
+		&i.CanvasY,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listDocumentsByUser = `-- name: ListDocumentsByUser :many
+SELECT id, set_id, user_id, filename, content_type, size_bytes, object_key, canvas_x, canvas_y, created_at, updated_at FROM documents
+WHERE user_id = $1
+ORDER BY created_at ASC
+`
+
+func (q *Queries) ListDocumentsByUser(ctx context.Context, userID uuid.UUID) ([]Document, error) {
+	rows, err := q.db.Query(ctx, listDocumentsByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Document
+	for rows.Next() {
+		var i Document
+		if err := rows.Scan(
+			&i.ID,
+			&i.SetID,
+			&i.UserID,
+			&i.Filename,
+			&i.ContentType,
+			&i.SizeBytes,
+			&i.ObjectKey,
+			&i.CanvasX,
+			&i.CanvasY,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateDocumentSetStatus = `-- name: UpdateDocumentSetStatus :one

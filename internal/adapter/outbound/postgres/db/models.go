@@ -11,6 +11,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Document struct {
+	ID          uuid.UUID
+	SetID       uuid.UUID
+	UserID      uuid.UUID
+	Filename    string
+	ContentType string
+	SizeBytes   int64
+	ObjectKey   string
+	CanvasX     pgtype.Float8
+	CanvasY     pgtype.Float8
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
 type DocumentSet struct {
 	ID               uuid.UUID
 	UserID           uuid.UUID

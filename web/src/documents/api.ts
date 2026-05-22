@@ -1,4 +1,4 @@
-import { DocumentError, DocumentSet, UploadSlot } from './types'
+import { DocumentError, DocumentResponse, DocumentSet, UploadSlot } from './types'
 
 export async function requestUploadSlot(filename: string): Promise<UploadSlot> {
   let res: Response
@@ -53,6 +53,19 @@ export async function completeUpload(setID: string): Promise<DocumentSet> {
   if (res.status === 401) throw new DocumentError('UNAUTHORIZED', 'Not authenticated')
   if (res.status === 404) throw new DocumentError('NOT_FOUND', 'Document set not found')
   if (!res.ok) throw new DocumentError('NETWORK_ERROR', 'Failed to complete upload')
+  return res.json()
+}
+
+export async function listDocuments(): Promise<DocumentResponse[]> {
+  let res: Response
+  try {
+    res = await fetch('/api/documents')
+  } catch {
+    throw new DocumentError('NETWORK_ERROR', 'Network error')
+  }
+
+  if (res.status === 401) throw new DocumentError('UNAUTHORIZED', 'Not authenticated')
+  if (!res.ok) throw new DocumentError('NETWORK_ERROR', 'Failed to fetch documents')
   return res.json()
 }
 

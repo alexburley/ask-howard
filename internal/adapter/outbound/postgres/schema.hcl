@@ -1,5 +1,81 @@
 schema "public" {}
 
+table "documents" {
+  schema = schema.public
+
+  column "id" {
+    null    = false
+    type    = uuid
+    default = sql("gen_random_uuid()")
+  }
+  column "set_id" {
+    null = false
+    type = uuid
+  }
+  column "user_id" {
+    null = false
+    type = uuid
+  }
+  column "filename" {
+    null = false
+    type = varchar(255)
+  }
+  column "content_type" {
+    null = false
+    type = varchar(100)
+  }
+  column "size_bytes" {
+    null = false
+    type = bigint
+  }
+  column "object_key" {
+    null = false
+    type = text
+  }
+  column "canvas_x" {
+    null = true
+    type = double_precision
+  }
+  column "canvas_y" {
+    null = true
+    type = double_precision
+  }
+  column "created_at" {
+    null    = false
+    type    = timestamptz
+    default = sql("now()")
+  }
+  column "updated_at" {
+    null    = false
+    type    = timestamptz
+    default = sql("now()")
+  }
+
+  primary_key {
+    columns = [column.id]
+  }
+
+  foreign_key "fk_documents_set" {
+    columns     = [column.set_id]
+    ref_columns = [table.document_sets.column.id]
+    on_delete   = CASCADE
+  }
+
+  foreign_key "fk_documents_user" {
+    columns     = [column.user_id]
+    ref_columns = [table.users.column.id]
+    on_delete   = CASCADE
+  }
+
+  index "idx_documents_set_id" {
+    columns = [column.set_id]
+  }
+
+  index "idx_documents_user_id" {
+    columns = [column.user_id]
+  }
+}
+
 table "document_sets" {
   schema = schema.public
 

@@ -4,14 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/alexburley/ask-howard/internal/auth"
 	"github.com/alexburley/ask-howard/internal/domain"
 	"github.com/alexburley/ask-howard/internal/port/inbound"
+	"github.com/alexburley/ask-howard/internal/port/outbound"
 	"github.com/google/uuid"
 	"github.com/nickbryan/httputil"
 	"github.com/nickbryan/httputil/problem"
 )
+
+const presignGetExpiry = 15 * time.Minute
 
 type uploadRequestBody struct {
 	Filename string `json:"filename" validate:"required"`
@@ -27,14 +31,23 @@ type documentSetResponse struct {
 	ID               string `json:"id"`
 	Status           string `json:"status"`
 	OriginalFilename string `json:"original_filename"`
+	DocumentCount    int64  `json:"document_count"`
 	Error            string `json:"error,omitempty"`
+}
+
+type documentResponse struct {
+	ID           string `json:"id"`
+	Filename     string `json:"filename"`
+	ContentType  string `json:"content_type"`
+	SizeBytes    int64  `json:"size_bytes"`
+	PresignedURL string `json:"presigned_url"`
 }
 
 type setIDParams struct {
 	ID uuid.UUID `path:"id" validate:"required"`
 }
 
-func DocumentEndpoints(svc inbound.DocumentService, jwtSecret auth.JWTSecret) []httputil.Endpoint {
+func DocumentEndpoints(svc inbound.DocumentService, store outbound.ObjectStore, jwtSecret auth.JWTSecret) []httputil.Endpoint {
 	return []httputil.Endpoint{
 		{
 			Method: http.MethodPost,
@@ -69,16 +82,17 @@ func DocumentEndpoints(svc inbound.DocumentService, jwtSecret auth.JWTSecret) []
 				set, err := svc.CompleteUpload(r.Context(), r.Params.ID, userID)
 				if err != nil {
 					if errors.Is(err, domain.ErrDocumentSetNotFound) {
-						return nil, (&problem.DetailedError{
-							Type:   "https://ask-howard.io/problems/not-found",
-							Title:  "Not Found",
-							Status: http.StatusNotFound,
-						}).WithDetail("Document set not found")
+						return nil, notFoundProblem()
 					}
 					return nil, fmt.Errorf("complete upload: %w", err)
 				}
 
-				return httputil.OK(toDocumentSetResponse(&set))
+				return httputil.OK(documentSetResponse{
+					ID:               set.ID.String(),
+					Status:           set.Status,
+					OriginalFilename: set.OriginalFilename,
+					DocumentCount:    0,
+				})
 			}),
 		},
 		{
@@ -90,29 +104,62 @@ func DocumentEndpoints(svc inbound.DocumentService, jwtSecret auth.JWTSecret) []
 					return nil, err
 				}
 
-				set, err := svc.GetDocumentSet(r.Context(), r.Params.ID, userID)
+				result, err := svc.GetDocumentSet(r.Context(), r.Params.ID, userID)
 				if err != nil {
 					if errors.Is(err, domain.ErrDocumentSetNotFound) {
-						return nil, (&problem.DetailedError{
-							Type:   "https://ask-howard.io/problems/not-found",
-							Title:  "Not Found",
-							Status: http.StatusNotFound,
-						}).WithDetail("Document set not found")
+						return nil, notFoundProblem()
 					}
 					return nil, fmt.Errorf("get document set: %w", err)
 				}
 
-				return httputil.OK(toDocumentSetResponse(&set))
+				return httputil.OK(documentSetResponse{
+					ID:               result.ID.String(),
+					Status:           result.Status,
+					OriginalFilename: result.OriginalFilename,
+					DocumentCount:    result.DocumentCount,
+					Error:            result.Error,
+				})
+			}),
+		},
+		{
+			Method: http.MethodGet,
+			Path:   "/documents",
+			Handler: httputil.NewHandler(func(r httputil.RequestEmpty) (*httputil.Response, error) {
+				userID, err := currentUserID(r.Request, jwtSecret)
+				if err != nil {
+					return nil, err
+				}
+
+				docs, err := svc.ListDocuments(r.Context(), userID)
+				if err != nil {
+					return nil, fmt.Errorf("list documents: %w", err)
+				}
+
+				resp := make([]documentResponse, 0, len(docs))
+				for i := range docs {
+					presignedURL, presignErr := store.PresignGet(r.Context(), docs[i].ObjectKey, presignGetExpiry)
+					if presignErr != nil {
+						return nil, fmt.Errorf("presign get for %s: %w", docs[i].ID, presignErr)
+					}
+					resp = append(resp, documentResponse{
+						ID:           docs[i].ID.String(),
+						Filename:     docs[i].Filename,
+						ContentType:  docs[i].ContentType,
+						SizeBytes:    docs[i].SizeBytes,
+						PresignedURL: presignedURL,
+					})
+				}
+
+				return httputil.OK(resp)
 			}),
 		},
 	}
 }
 
-func toDocumentSetResponse(set *domain.DocumentSet) documentSetResponse {
-	return documentSetResponse{
-		ID:               set.ID.String(),
-		Status:           set.Status,
-		OriginalFilename: set.OriginalFilename,
-		Error:            set.Error,
-	}
+func notFoundProblem() *problem.DetailedError {
+	return (&problem.DetailedError{
+		Type:   "https://ask-howard.io/problems/not-found",
+		Title:  "Not Found",
+		Status: http.StatusNotFound,
+	}).WithDetail("Document not found")
 }

@@ -1,15 +1,18 @@
 import { useState } from 'react'
-import { completeUpload, requestUploadSlot, uploadToPresignedUrl } from '../documents/api'
+import { completeUpload, pollDocumentSet, requestUploadSlot, uploadToPresignedUrl } from '../documents/api'
 import { DocumentError, DocumentSet } from '../documents/types'
 
 type UploadState =
   | { phase: 'idle' }
   | { phase: 'uploading'; progress: number }
-  | { phase: 'processing' }
+  | { phase: 'processing'; setID: string }
   | { phase: 'done'; set: DocumentSet }
   | { phase: 'error'; message: string }
 
-export function useUpload() {
+const POLL_INTERVAL_MS = 2000
+const POLL_TIMEOUT_MS = 5 * 60 * 1000
+
+export function useUpload(onReady?: () => void) {
   const [state, setState] = useState<UploadState>({ phase: 'idle' })
 
   async function upload(file: File) {
@@ -21,13 +24,32 @@ export function useUpload() {
         setState({ phase: 'uploading', progress: pct })
       })
 
-      setState({ phase: 'processing' })
       const set = await completeUpload(slot.document_set_id)
-      setState({ phase: 'done', set })
+      setState({ phase: 'processing', setID: set.id })
+
+      await pollUntilDone(set.id)
     } catch (err) {
       const message = err instanceof DocumentError ? err.message : 'Upload failed'
       setState({ phase: 'error', message })
     }
+  }
+
+  async function pollUntilDone(setID: string) {
+    const deadline = Date.now() + POLL_TIMEOUT_MS
+    while (Date.now() < deadline) {
+      await sleep(POLL_INTERVAL_MS)
+      const set = await pollDocumentSet(setID)
+      if (set.status === 'READY') {
+        setState({ phase: 'done', set })
+        onReady?.()
+        return
+      }
+      if (set.status === 'FAILED') {
+        setState({ phase: 'error', message: set.error ?? 'Processing failed' })
+        return
+      }
+    }
+    setState({ phase: 'error', message: 'Processing timed out' })
   }
 
   function reset() {
@@ -35,4 +57,8 @@ export function useUpload() {
   }
 
   return { state, upload, reset }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }

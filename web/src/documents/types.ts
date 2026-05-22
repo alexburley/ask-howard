@@ -13,6 +13,14 @@ export type UploadSlot = {
   object_key: string
 }
 
+export type DocumentResponse = {
+  id: string
+  filename: string
+  content_type: string
+  size_bytes: number
+  presigned_url: string
+}
+
 export type DocumentErrorCode = 'UNAUTHORIZED' | 'NOT_FOUND' | 'NETWORK_ERROR'
 
 export class DocumentError extends Error {

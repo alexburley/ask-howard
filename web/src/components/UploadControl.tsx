@@ -1,8 +1,12 @@
 import { useRef } from 'react'
 import { useUpload } from '../hooks/useUpload'
 
-export function UploadControl() {
-  const { state, upload, reset } = useUpload()
+type Props = {
+  onReady?: () => void
+}
+
+export function UploadControl({ onReady }: Props) {
+  const { state, upload, reset } = useUpload(onReady)
   const inputRef = useRef<HTMLInputElement>(null)
 
   function handleFiles(files: FileList | null) {
@@ -34,7 +38,10 @@ export function UploadControl() {
   if (state.phase === 'processing') {
     return (
       <div className="upload-control">
-        <p className="upload-status">Processing documents…</p>
+        <p className="upload-status">Processing your documents…</p>
+        <div className="upload-progress-bar">
+          <div className="upload-progress-fill upload-progress-fill--indeterminate" />
+        </div>
       </div>
     )
   }
@@ -43,7 +50,7 @@ export function UploadControl() {
     return (
       <div className="upload-control">
         <p className="upload-status upload-status--success">
-          Upload complete — documents are being prepared
+          {state.set.document_count} document{state.set.document_count !== 1 ? 's' : ''} ready
         </p>
         <button className="upload-btn" onClick={reset}>Upload another</button>
       </div>

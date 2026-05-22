@@ -7,10 +7,14 @@ import (
 	"os"
 
 	"github.com/alexburley/ask-howard/internal/adapter/inbound/httpserver"
+	"github.com/alexburley/ask-howard/internal/adapter/outbound/jobs"
 	"github.com/alexburley/ask-howard/internal/adapter/outbound/postgres"
 	"github.com/alexburley/ask-howard/internal/adapter/outbound/s3"
 	"github.com/alexburley/ask-howard/internal/auth"
 	"github.com/alexburley/ask-howard/internal/service"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"github.com/riverqueue/river/rivermigrate"
 )
 
 type config struct {
@@ -66,6 +70,14 @@ func run(logger *slog.Logger) error {
 	}
 	defer pool.Close()
 
+	migrator, err := rivermigrate.New(riverpgxv5.New(pool), nil)
+	if err != nil {
+		return fmt.Errorf("create river migrator: %w", err)
+	}
+	if _, err := migrator.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
+		return fmt.Errorf("apply river migrations: %w", err)
+	}
+
 	objectStore, err := s3.NewStore(ctx, &cfg.S3)
 	if err != nil {
 		return fmt.Errorf("connect to object store: %w", err)
@@ -75,9 +87,22 @@ func run(logger *slog.Logger) error {
 	authSvc := service.NewAuthService(userRepo)
 
 	docRepo := postgres.NewDocumentRepository(pool)
-	docSvc := service.NewDocumentService(docRepo, objectStore)
 
-	srv := httpserver.NewServer(logger, pool, authSvc, docSvc, cfg.JWTSecret)
+	workers := river.NewWorkers()
+	river.AddWorker(workers, jobs.NewExtractionWorker(objectStore, docRepo))
+
+	jobClient, err := jobs.NewClient(ctx, pool, workers)
+	if err != nil {
+		return fmt.Errorf("create job client: %w", err)
+	}
+	if err := jobClient.Start(ctx); err != nil {
+		return fmt.Errorf("start job client: %w", err)
+	}
+	defer jobClient.Stop(ctx) //nolint:errcheck // best-effort shutdown; error is logged by river internally
+
+	docSvc := service.NewDocumentService(docRepo, objectStore, jobClient)
+
+	srv := httpserver.NewServer(logger, pool, authSvc, docSvc, objectStore, cfg.JWTSecret)
 	srv.Serve(ctx)
 	return nil
 }

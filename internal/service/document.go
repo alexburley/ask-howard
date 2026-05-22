@@ -14,12 +14,13 @@ import (
 type DocumentService struct {
 	docs  outbound.DocumentRepository
 	store outbound.ObjectStore
+	jobs  outbound.JobEnqueuer
 }
 
 var _ inbound.DocumentService = (*DocumentService)(nil)
 
-func NewDocumentService(docs outbound.DocumentRepository, store outbound.ObjectStore) *DocumentService {
-	return &DocumentService{docs: docs, store: store}
+func NewDocumentService(docs outbound.DocumentRepository, store outbound.ObjectStore, jobs outbound.JobEnqueuer) *DocumentService {
+	return &DocumentService{docs: docs, store: store, jobs: jobs}
 }
 
 func (s *DocumentService) CreateUploadSlot(ctx context.Context, userID uuid.UUID, filename string) (inbound.UploadSlotResult, error) {
@@ -58,13 +59,31 @@ func (s *DocumentService) CompleteUpload(ctx context.Context, setID, userID uuid
 		return domain.DocumentSet{}, fmt.Errorf("update document set status: %w", err)
 	}
 
+	if err := s.jobs.EnqueueExtraction(ctx, setID, userID); err != nil {
+		return domain.DocumentSet{}, fmt.Errorf("enqueue extraction: %w", err)
+	}
+
 	return set, nil
 }
 
-func (s *DocumentService) GetDocumentSet(ctx context.Context, setID, userID uuid.UUID) (domain.DocumentSet, error) {
+func (s *DocumentService) GetDocumentSet(ctx context.Context, setID, userID uuid.UUID) (inbound.DocumentSetWithCount, error) {
 	set, err := s.docs.GetDocumentSetByIDAndUser(ctx, setID, userID)
 	if err != nil {
-		return domain.DocumentSet{}, fmt.Errorf("get document set: %w", err)
+		return inbound.DocumentSetWithCount{}, fmt.Errorf("get document set: %w", err)
 	}
-	return set, nil
+
+	count, err := s.docs.CountDocumentsBySetID(ctx, setID)
+	if err != nil {
+		return inbound.DocumentSetWithCount{}, fmt.Errorf("count documents: %w", err)
+	}
+
+	return inbound.DocumentSetWithCount{DocumentSet: set, DocumentCount: count}, nil
+}
+
+func (s *DocumentService) ListDocuments(ctx context.Context, userID uuid.UUID) ([]domain.Document, error) {
+	docs, err := s.docs.ListDocumentsByUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list documents: %w", err)
+	}
+	return docs, nil
 }

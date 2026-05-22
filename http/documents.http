@@ -9,5 +9,8 @@ Content-Type: application/json
 ### Complete an upload (replace :id with the document_set_id from the slot response)
 POST http://localhost:8080/api/documents/sets/:id/complete
 
-### Poll the status of a document set
+### Poll the status of a document set (includes document_count once READY)
 GET http://localhost:8080/api/documents/sets/:id
+
+### List all documents for the authenticated user (includes presigned GET URLs)
+GET http://localhost:8080/api/documents
