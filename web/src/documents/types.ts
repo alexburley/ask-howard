@@ -19,6 +19,7 @@ export type DocumentResponse = {
   content_type: string
   size_bytes: number
   presigned_url: string
+  presigned_url_expires_at: string
 }
 
 export type DocumentErrorCode = 'UNAUTHORIZED' | 'NOT_FOUND' | 'NETWORK_ERROR'

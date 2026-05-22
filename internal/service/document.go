@@ -94,11 +94,16 @@ func (s *DocumentService) ListDocuments(ctx context.Context, userID uuid.UUID) (
 
 	result := make([]inbound.DocumentWithURL, 0, len(docs))
 	for i := range docs {
+		expiresAt := time.Now().Add(presignGetExpiry)
 		url, err := s.store.PresignGet(ctx, docs[i].ObjectKey, presignGetExpiry)
 		if err != nil {
 			return nil, fmt.Errorf("presign get for %s: %w", docs[i].ID, err)
 		}
-		result = append(result, inbound.DocumentWithURL{Document: docs[i], PresignedURL: url})
+		result = append(result, inbound.DocumentWithURL{
+			Document:        docs[i],
+			PresignedURL:    url,
+			PresignedURLExp: expiresAt,
+		})
 	}
 	return result, nil
 }

@@ -2,6 +2,7 @@ package inbound
 
 import (
 	"context"
+	"time"
 
 	"github.com/alexburley/ask-howard/internal/domain"
 	"github.com/google/uuid"
@@ -20,7 +21,8 @@ type DocumentSetWithCount struct {
 
 type DocumentWithURL struct {
 	domain.Document
-	PresignedURL string
+	PresignedURL    string
+	PresignedURLExp time.Time
 }
 
 type DocumentService interface {

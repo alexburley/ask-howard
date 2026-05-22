@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/alexburley/ask-howard/internal/auth"
 	"github.com/alexburley/ask-howard/internal/domain"
@@ -32,11 +33,12 @@ type documentSetResponse struct {
 }
 
 type documentResponse struct {
-	ID           string `json:"id"`
-	Filename     string `json:"filename"`
-	ContentType  string `json:"content_type"`
-	SizeBytes    int64  `json:"size_bytes"`
-	PresignedURL string `json:"presigned_url"`
+	ID                    string    `json:"id"`
+	Filename              string    `json:"filename"`
+	ContentType           string    `json:"content_type"`
+	SizeBytes             int64     `json:"size_bytes"`
+	PresignedURL          string    `json:"presigned_url"`
+	PresignedURLExpiresAt time.Time `json:"presigned_url_expires_at"`
 }
 
 type setIDParams struct {
@@ -136,11 +138,12 @@ func DocumentEndpoints(svc inbound.DocumentService) []httputil.Endpoint {
 				resp := make([]documentResponse, 0, len(docs))
 				for i := range docs {
 					resp = append(resp, documentResponse{
-						ID:           docs[i].ID.String(),
-						Filename:     docs[i].Filename,
-						ContentType:  docs[i].ContentType,
-						SizeBytes:    docs[i].SizeBytes,
-						PresignedURL: docs[i].PresignedURL,
+						ID:                    docs[i].ID.String(),
+						Filename:              docs[i].Filename,
+						ContentType:           docs[i].ContentType,
+						SizeBytes:             docs[i].SizeBytes,
+						PresignedURL:          docs[i].PresignedURL,
+						PresignedURLExpiresAt: docs[i].PresignedURLExp,
 					})
 				}
 
