@@ -9,7 +9,8 @@ extract facts** from them into a queryable knowledge base.
 
 This document is the top-level planning artifact. It captures the technical direction, the
 key decisions, and the epic map. Each epic has its own file (`EPIC-N-*.md`) breaking the
-work into component user stories that follow the existing `US-N` convention in this folder.
+work into **full-stack user stories** — each story delivers a working slice of user-facing
+functionality, covering backend, frontend, functional tests, and e2e tests together.
 
 ## Where we are today
 
@@ -23,7 +24,7 @@ The codebase is early-stage:
   Playwright e2e, GitHub Actions CI.
 
 Existing planning stories `US-5`–`US-9` cover the auth/app-shell work already built. New
-stories in these epics continue numbering from **US-10**.
+stories continue numbering from **US-10**.
 
 ## Decisions (confirmed with product owner)
 
@@ -34,7 +35,7 @@ stories in these epics continue numbering from **US-10**.
 | Upload / storage | **Presigned direct-to-S3 upload** of the zip + **server-side extraction** into per-document objects |
 | Background jobs | **River** (Postgres-backed queue) — durable, pgx-native, no new infra |
 | Canvas | **`@xyflow/react`** (React Flow) — grows into the relationship-graph epic without a rewrite |
-| Scope | MVP (epics 1–4) detailed to story level; analysis epics (5–7) outlined and deferred |
+| Story orientation | **Full-stack vertical slices** — each story delivers frontend + backend + functional test + e2e |
 
 ## Technical overview
 
@@ -60,10 +61,6 @@ Proxying multi-GB zips through the Go API is the thing we'd later have to rip ou
 4. Worker downloads the zip, streams entries, writes each document as its own S3 object,
    inserts one `documents` row each, sets the set to `READY` (or `FAILED` + error).
 
-This handles large files cleanly, and the per-document objects/rows are exactly what the
-canvas, detail view, and later analysis need. Tradeoff: requires bucket CORS config and a
-small client-side PUT flow.
-
 ### Hexagonal placement (follows existing patterns)
 
 ```
@@ -80,39 +77,36 @@ internal/
         └── jobs/                   River client + extraction worker
 ```
 
-**Auth note:** there is no auth middleware today — `/auth/me` parses the JWT cookie inline
-(`token.Parse`). New authenticated endpoints should reuse a small extracted helper, e.g.
-`handler.currentUserID(r, jwtSecret) (uuid.UUID, error)`, returning a 401
+**Auth note:** token parsing is currently inline in each handler. New authenticated endpoints
+should use a shared `handler.currentUserID(r, jwtSecret)` helper returning a 401
 `problem.DetailedError` on failure.
+
+## Test strategy
+
+Every story that changes the backend ships a **functional test** (`//go:build functional`,
+runs with `make test` against the compose Postgres and MinIO). Every story that changes the
+frontend ships a **Playwright e2e test** in `web/e2e/`. Both must be green before a story is
+considered done.
 
 ## Epic map
 
 | Epic | Title | Status | Stories |
 |---|---|---|---|
-| 1 | Object storage adapter | MVP | US-10 .. US-12 |
-| 2 | Upload pipeline | MVP | US-13 .. US-18 |
-| 3 | Canvas workspace | MVP | US-19 .. US-23 |
-| 4 | Document detail view | MVP | US-24 .. US-26 |
-| 5 | On-demand AI tagging | Deferred | outline only |
-| 6 | Relationship analysis | Deferred | outline only |
-| 7 | Knowledge base | Deferred | outline only |
+| 1 | Document upload | MVP | US-10 .. US-12 |
+| 2 | Document canvas | MVP | US-13 .. US-14 |
+| 3 | Document detail | MVP | US-15 |
+| 4 | On-demand AI tagging | Deferred | outline only |
+| 5 | Relationship analysis | Deferred | outline only |
+| 6 | Knowledge base | Deferred | outline only |
 
-**MVP = epics 1–4:** a user can upload a zip, watch it process, see their documents floating
-on a canvas, rearrange them (positions persist), and click one to view/download it. No AI yet.
+**MVP = epics 1–3:** a user can upload a zip, watch it extract, see their documents floating
+on a canvas, rearrange them (positions persist), and click one to view/download it.
 
-## Suggested sequencing
+## Sequencing
 
-1. **Epic 1** (storage) is the foundation — nothing uploads without it.
-2. **Epic 2** (pipeline) depends on Epic 1; delivers the data model + extraction.
-3. **Epic 3** (canvas) and **Epic 4** (detail) are frontend-led and depend on Epic 2's API.
-   They can be built in parallel once the document endpoints exist.
-4. **Epics 5–7** are deferred; Epic 4 leaves a clearly-marked seam where on-demand tagging
-   (Epic 5) will hook in.
-
-## Cross-cutting (applies across MVP epics)
-
-- Update `README.md` and `CLAUDE.md` for object storage, jobs, upload flow, and new env vars.
-- Add `http/documents.http` manual request file.
-- Extend Playwright e2e (`web/e2e/`): register → upload a small fixture zip → wait for
-  processing → see nodes on canvas → open detail. Unique email per run.
-- Per repo rules: `make test` (functional) and `make lint` green before any story is "done".
+1. **US-10** (storage infra) is the foundation — nothing else works without it.
+2. **US-11** and **US-12** deliver the upload pipeline end-to-end; US-12 depends on US-11.
+3. **US-13** (canvas) and **US-14** (layout) are frontend-led but need US-12's document list
+   API; they can be built in parallel with each other after US-12's API lands.
+4. **US-15** (detail) builds on US-13's selection model and US-12's presigned GET.
+5. Epics 4–6 are deferred; US-15 ships a clearly-marked seam for AI tagging (Epic 4).
