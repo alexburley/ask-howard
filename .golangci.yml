@@ -36,6 +36,7 @@ linters:
       disabled-checks:
         - ifElseChain   # subjective; chain-of-if is sometimes clearer
 
+
   exclusions:
     rules:
       # testutil is test scaffolding; bare fmt.Errorf without a static sentinel

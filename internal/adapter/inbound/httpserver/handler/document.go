@@ -47,15 +47,17 @@ type setIDParams struct {
 	ID uuid.UUID `path:"id" validate:"required"`
 }
 
-func DocumentEndpoints(svc inbound.DocumentService, store outbound.ObjectStore, jwtSecret auth.JWTSecret) []httputil.Endpoint {
+// DocumentEndpoints returns the document endpoints. All endpoints require a
+// valid JWT — apply NewAuthGuard to this group when registering with the server.
+func DocumentEndpoints(svc inbound.DocumentService, store outbound.ObjectStore) []httputil.Endpoint {
 	return []httputil.Endpoint{
 		{
 			Method: http.MethodPost,
 			Path:   "/documents/upload",
 			Handler: httputil.NewHandler(func(r httputil.RequestData[uploadRequestBody]) (*httputil.Response, error) {
-				userID, err := currentUserID(r.Request, jwtSecret)
+				userID, err := auth.UserIDFromContext(r.Context())
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("read user from context: %w", err)
 				}
 
 				result, err := svc.CreateUploadSlot(r.Context(), userID, r.Data.Filename)
@@ -74,9 +76,9 @@ func DocumentEndpoints(svc inbound.DocumentService, store outbound.ObjectStore, 
 			Method: http.MethodPost,
 			Path:   "/documents/sets/{id}/complete",
 			Handler: httputil.NewHandler(func(r httputil.RequestParams[setIDParams]) (*httputil.Response, error) {
-				userID, err := currentUserID(r.Request, jwtSecret)
+				userID, err := auth.UserIDFromContext(r.Context())
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("read user from context: %w", err)
 				}
 
 				set, err := svc.CompleteUpload(r.Context(), r.Params.ID, userID)
@@ -99,9 +101,9 @@ func DocumentEndpoints(svc inbound.DocumentService, store outbound.ObjectStore, 
 			Method: http.MethodGet,
 			Path:   "/documents/sets/{id}",
 			Handler: httputil.NewHandler(func(r httputil.RequestParams[setIDParams]) (*httputil.Response, error) {
-				userID, err := currentUserID(r.Request, jwtSecret)
+				userID, err := auth.UserIDFromContext(r.Context())
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("read user from context: %w", err)
 				}
 
 				result, err := svc.GetDocumentSet(r.Context(), r.Params.ID, userID)
@@ -125,9 +127,9 @@ func DocumentEndpoints(svc inbound.DocumentService, store outbound.ObjectStore, 
 			Method: http.MethodGet,
 			Path:   "/documents",
 			Handler: httputil.NewHandler(func(r httputil.RequestEmpty) (*httputil.Response, error) {
-				userID, err := currentUserID(r.Request, jwtSecret)
+				userID, err := auth.UserIDFromContext(r.Context())
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("read user from context: %w", err)
 				}
 
 				docs, err := svc.ListDocuments(r.Context(), userID)

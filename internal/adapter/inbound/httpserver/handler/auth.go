@@ -13,11 +13,6 @@ import (
 	"github.com/nickbryan/httputil/problem"
 )
 
-const (
-	problemUnauthorizedType  = "https://ask-howard.io/problems/unauthorized"
-	problemUnauthorizedTitle = "Unauthorized"
-)
-
 type authBody struct {
 	Email    string `json:"email"    validate:"required,email"`
 	Password string `json:"password" validate:"required,min=8"`
@@ -33,7 +28,8 @@ type userResponse struct {
 	Email string `json:"email"`
 }
 
-func AuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil.Endpoint {
+// OpenAuthEndpoints returns the unauthenticated auth endpoints (register, login, logout).
+func OpenAuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil.Endpoint {
 	return []httputil.Endpoint{
 		{
 			Method: http.MethodPost,
@@ -102,21 +98,28 @@ func AuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil
 				return httputil.OK(map[string]string{"status": "OK"})
 			}),
 		},
+	}
+}
+
+// ProtectedAuthEndpoints returns auth endpoints that require a valid JWT cookie.
+// Apply NewAuthGuard to this group when registering with the server.
+func ProtectedAuthEndpoints(svc inbound.AuthService) []httputil.Endpoint {
+	return []httputil.Endpoint{
 		{
 			Method: http.MethodGet,
 			Path:   "/auth/me",
 			Handler: httputil.NewHandler(func(r httputil.RequestEmpty) (*httputil.Response, error) {
-				userID, err := currentUserID(r.Request, jwtSecret)
+				userID, err := auth.UserIDFromContext(r.Context())
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("read user from context: %w", err)
 				}
 
 				user, err := svc.GetByID(r.Context(), userID)
 				if err != nil {
 					if errors.Is(err, domain.ErrUserNotFound) {
 						return nil, &problem.DetailedError{
-							Type:   problemUnauthorizedType,
-							Title:  problemUnauthorizedTitle,
+							Type:   auth.ProblemUnauthorizedType,
+							Title:  auth.ProblemUnauthorizedTitle,
 							Status: http.StatusUnauthorized,
 						}
 					}
