@@ -26,7 +26,7 @@ func (s *HealthSuite) SetupSuite() {
 	s.Suite.SetupSuite()
 
 	authSvc := service.NewAuthService(postgres.NewUserRepository(s.Pool))
-	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), s.Pool, authSvc, nil, nil, testJWTSecret)
+	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), s.Pool, authSvc, &noopDocumentService{}, testJWTSecret)
 	s.server = httptest.NewServer(srv)
 }
 

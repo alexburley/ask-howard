@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test'
-import { join } from 'path'
+import { fileURLToPath } from 'url'
 
 function uniqueEmail() {
   return `test-${Date.now()}@example.com`
 }
 
 const PASSWORD = 'password123'
-const TEST_ZIP = join(__dirname, 'fixtures', 'test-content.zip')
+const TEST_ZIP = fileURLToPath(new URL('fixtures/test-content.zip', import.meta.url))
 
 test.describe('Upload', () => {
   test('registers, uploads a zip, and sees processing then ready state', async ({ page }) => {
