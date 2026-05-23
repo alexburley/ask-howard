@@ -48,26 +48,31 @@ func (s *DocumentService) CreateUploadSlot(ctx context.Context, userID uuid.UUID
 	}, nil
 }
 
-func (s *DocumentService) CompleteUpload(ctx context.Context, setID, userID uuid.UUID) (domain.DocumentSet, error) {
+func (s *DocumentService) CompleteUpload(ctx context.Context, setID, userID uuid.UUID) (inbound.DocumentSetWithCount, error) {
 	_, err := s.docs.GetDocumentSetByIDAndUser(ctx, setID, userID)
 	if err != nil {
-		return domain.DocumentSet{}, fmt.Errorf("get document set: %w", err)
+		return inbound.DocumentSetWithCount{}, fmt.Errorf("get document set: %w", err)
 	}
 
 	set, err := s.docs.UpdateDocumentSetStatus(ctx, setID, domain.DocumentSetStatusProcessing, "")
 	if err != nil {
-		return domain.DocumentSet{}, fmt.Errorf("update document set status: %w", err)
+		return inbound.DocumentSetWithCount{}, fmt.Errorf("update document set status: %w", err)
 	}
 
 	if err := s.jobs.EnqueueExtraction(ctx, setID, userID); err != nil {
 		// Roll back the status so the set does not get stuck in PROCESSING.
 		if _, rollbackErr := s.docs.UpdateDocumentSetStatus(ctx, setID, domain.DocumentSetStatusFailed, "failed to enqueue extraction"); rollbackErr != nil {
-			return domain.DocumentSet{}, fmt.Errorf("enqueue extraction: %w; also failed to roll back status: %w", err, rollbackErr)
+			return inbound.DocumentSetWithCount{}, fmt.Errorf("enqueue extraction: %w; also failed to roll back status: %w", err, rollbackErr)
 		}
-		return domain.DocumentSet{}, fmt.Errorf("enqueue extraction: %w", err)
+		return inbound.DocumentSetWithCount{}, fmt.Errorf("enqueue extraction: %w", err)
 	}
 
-	return set, nil
+	count, err := s.docs.CountDocumentsBySetID(ctx, setID)
+	if err != nil {
+		return inbound.DocumentSetWithCount{}, fmt.Errorf("count documents: %w", err)
+	}
+
+	return inbound.DocumentSetWithCount{DocumentSet: set, DocumentCount: count}, nil
 }
 
 func (s *DocumentService) GetDocumentSet(ctx context.Context, setID, userID uuid.UUID) (inbound.DocumentSetWithCount, error) {

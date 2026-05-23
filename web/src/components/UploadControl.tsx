@@ -50,7 +50,7 @@ export function UploadControl({ onReady }: Props) {
     return (
       <div className="upload-control">
         <p className="upload-status upload-status--success">
-          {state.set.document_count} document{state.set.document_count !== 1 ? 's' : ''} ready
+          {state.set.documentCount} document{state.set.documentCount !== 1 ? 's' : ''} ready
         </p>
         <button className="upload-btn" onClick={reset}>Upload another</button>
       </div>

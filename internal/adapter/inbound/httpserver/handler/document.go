@@ -79,7 +79,7 @@ func DocumentEndpoints(svc inbound.DocumentService) []httputil.Endpoint {
 					return nil, fmt.Errorf("read user from context: %w", err)
 				}
 
-				set, err := svc.CompleteUpload(r.Context(), r.Params.ID, userID)
+				result, err := svc.CompleteUpload(r.Context(), r.Params.ID, userID)
 				if err != nil {
 					if errors.Is(err, domain.ErrDocumentSetNotFound) {
 						return nil, notFoundProblem()
@@ -88,10 +88,10 @@ func DocumentEndpoints(svc inbound.DocumentService) []httputil.Endpoint {
 				}
 
 				return httputil.OK(documentSetResponse{
-					ID:               set.ID.String(),
-					Status:           string(set.Status),
-					OriginalFilename: set.OriginalFilename,
-					DocumentCount:    0,
+					ID:               result.ID.String(),
+					Status:           string(result.Status),
+					OriginalFilename: result.OriginalFilename,
+					DocumentCount:    result.DocumentCount,
 				})
 			}),
 		},

@@ -27,7 +27,7 @@ type DocumentWithURL struct {
 
 type DocumentService interface {
 	CreateUploadSlot(ctx context.Context, userID uuid.UUID, filename string) (UploadSlotResult, error)
-	CompleteUpload(ctx context.Context, setID, userID uuid.UUID) (domain.DocumentSet, error)
+	CompleteUpload(ctx context.Context, setID, userID uuid.UUID) (DocumentSetWithCount, error)
 	GetDocumentSet(ctx context.Context, setID, userID uuid.UUID) (DocumentSetWithCount, error)
 	ListDocuments(ctx context.Context, userID uuid.UUID) ([]DocumentWithURL, error)
 }

@@ -4,6 +4,7 @@ type WireDocumentSet = {
   id: string
   status: string
   original_filename: string
+  document_count: number
   error?: string
 }
 
@@ -27,6 +28,7 @@ function toDocumentSet(w: WireDocumentSet): DocumentSet {
     id: w.id,
     status: w.status as DocumentSet['status'],
     originalFilename: w.original_filename,
+    documentCount: w.document_count,
     error: w.error,
   }
 }

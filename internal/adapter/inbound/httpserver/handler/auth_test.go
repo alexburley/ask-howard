@@ -4,6 +4,7 @@ package handler_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -14,8 +15,10 @@ import (
 	"github.com/alexburley/ask-howard/internal/adapter/inbound/httpserver"
 	"github.com/alexburley/ask-howard/internal/adapter/outbound/postgres"
 	"github.com/alexburley/ask-howard/internal/auth"
+	"github.com/alexburley/ask-howard/internal/port/inbound"
 	"github.com/alexburley/ask-howard/internal/service"
 	"github.com/alexburley/ask-howard/internal/testutil"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -30,7 +33,7 @@ func (s *AuthSuite) SetupSuite() {
 	s.Suite.SetupSuite()
 
 	authSvc := service.NewAuthService(postgres.NewUserRepository(s.Pool))
-	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), s.Pool, authSvc, nil, testJWTSecret)
+	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), s.Pool, authSvc, &noopDocumentService{}, testJWTSecret)
 	s.server = httptest.NewServer(srv)
 }
 
@@ -224,3 +227,23 @@ func cookieByName(resp *http.Response, name string) *http.Cookie {
 	}
 	return nil
 }
+
+type noopDocumentService struct{}
+
+func (n *noopDocumentService) CreateUploadSlot(_ context.Context, _ uuid.UUID, _ string) (inbound.UploadSlotResult, error) {
+	return inbound.UploadSlotResult{}, nil
+}
+
+func (n *noopDocumentService) CompleteUpload(_ context.Context, _, _ uuid.UUID) (inbound.DocumentSetWithCount, error) {
+	return inbound.DocumentSetWithCount{}, nil
+}
+
+func (n *noopDocumentService) GetDocumentSet(_ context.Context, _, _ uuid.UUID) (inbound.DocumentSetWithCount, error) {
+	return inbound.DocumentSetWithCount{}, nil
+}
+
+func (n *noopDocumentService) ListDocuments(_ context.Context, _ uuid.UUID) ([]inbound.DocumentWithURL, error) {
+	return nil, nil
+}
+
+var _ inbound.DocumentService = (*noopDocumentService)(nil)

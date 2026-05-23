@@ -18,9 +18,7 @@ func NewServer(logger *slog.Logger, db inbound.HealthChecker, authSvc inbound.Au
 	srv.Register(httputil.EndpointGroup(handler.HealthEndpoints(db)).WithPrefix("/api")...)
 	srv.Register(httputil.EndpointGroup(handler.OpenAuthEndpoints(authSvc, jwtSecret)).WithPrefix("/api")...)
 	srv.Register(httputil.EndpointGroup(handler.ProtectedAuthEndpoints(authSvc)).WithGuard(authGuard).WithPrefix("/api")...)
-	if docSvc != nil {
-		srv.Register(httputil.EndpointGroup(handler.DocumentEndpoints(docSvc)).WithGuard(authGuard).WithPrefix("/api")...)
-	}
+	srv.Register(httputil.EndpointGroup(handler.DocumentEndpoints(docSvc)).WithGuard(authGuard).WithPrefix("/api")...)
 	srv.Register(httputil.Endpoint{
 		Method:  http.MethodGet,
 		Path:    "/",

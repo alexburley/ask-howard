@@ -4,6 +4,7 @@ export type DocumentSet = {
   id: string
   status: DocumentSetStatus
   originalFilename: string
+  documentCount: number
   error?: string
 }
 
