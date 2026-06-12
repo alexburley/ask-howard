@@ -1,4 +1,4 @@
-.PHONY: start clean-start build test t coverage test-unit lint fmt generate sqlc migrate-diff migrate-apply migrate-status e2e hooks
+.PHONY: start clean-start build test t coverage test-unit lint fmt generate sqlc migrate-diff migrate-apply migrate-status e2e hooks seed
 
 # Run a command in the ci container without starting postgres.
 CI = docker compose run --rm --no-deps --build ci
@@ -12,6 +12,11 @@ hooks:
 # Start everything in Docker: Postgres, Go API (air hot-reload), and Vite dev server.
 start:
 	docker compose up --build --remove-orphans
+
+# Seed dev environment: registers dev@ask-howard.local / password123 and uploads the fixture zip.
+# Run after `make start` is up. Safe to re-run — logs in if the user already exists.
+seed:
+	@scripts/seed.sh
 
 # Tear down volumes and start fresh.
 clean-start:
