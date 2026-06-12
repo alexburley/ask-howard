@@ -18,15 +18,17 @@ import (
 )
 
 type config struct {
-	DatabaseURL string
-	JWTSecret   auth.JWTSecret
-	S3          s3.Config
+	DatabaseURL  string
+	JWTSecret    auth.JWTSecret
+	SecureCookie bool
+	S3           s3.Config
 }
 
 func loadConfig() config {
 	return config{
-		DatabaseURL: envOr("DATABASE_URL", "postgres://ask-howard:ask-howard@localhost:5432/ask-howard?sslmode=disable"),
-		JWTSecret:   auth.NewJWTSecret(os.Getenv("JWT_SECRET")),
+		DatabaseURL:  envOr("DATABASE_URL", "postgres://ask-howard:ask-howard@localhost:5432/ask-howard?sslmode=disable"),
+		JWTSecret:    auth.NewJWTSecret(os.Getenv("JWT_SECRET")),
+		SecureCookie: os.Getenv("COOKIE_SECURE") != "false",
 		S3: s3.Config{
 			Endpoint:        os.Getenv("S3_ENDPOINT"),
 			PresignEndpoint: os.Getenv("S3_PRESIGN_ENDPOINT"),
@@ -102,7 +104,7 @@ func run(logger *slog.Logger) error {
 
 	docSvc := service.NewDocumentService(docRepo, objectStore, jobClient)
 
-	srv := httpserver.NewServer(logger, pool, authSvc, docSvc, cfg.JWTSecret)
+	srv := httpserver.NewServer(logger, pool, authSvc, docSvc, cfg.JWTSecret, cfg.SecureCookie)
 	srv.Serve(ctx)
 	return nil
 }

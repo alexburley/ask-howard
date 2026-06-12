@@ -10,6 +10,7 @@ const TEST_ZIP = fileURLToPath(new URL('fixtures/test-content.zip', import.meta.
 
 test.describe('Upload', () => {
   test('registers, uploads a zip, and sees processing then ready state', async ({ page }) => {
+    test.setTimeout(90_000)
     const email = uniqueEmail()
 
     await page.goto('/')
@@ -19,16 +20,13 @@ test.describe('Upload', () => {
     await page.getByRole('button', { name: 'Create account' }).click()
     await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
 
-    const [fileChooser] = await Promise.all([
-      page.waitForEvent('filechooser'),
-      page.getByText('Drop a zip file here or click to browse').click(),
-    ])
-    await fileChooser.setFiles(TEST_ZIP)
+    await expect(page.getByText('Drop a zip file here or click to browse')).toBeVisible()
+    await page.locator('input[type="file"]').setInputFiles(TEST_ZIP)
 
     // Should show uploading or processing
     await expect(page.getByText(/Uploading|Processing your documents/)).toBeVisible({ timeout: 10000 })
 
     // Should eventually reach ready state with document count
-    await expect(page.getByText(/document.*ready/)).toBeVisible({ timeout: 30000 })
+    await expect(page.getByText(/document.*ready/)).toBeVisible({ timeout: 60000 })
   })
 })

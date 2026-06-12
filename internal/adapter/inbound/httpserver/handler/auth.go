@@ -29,7 +29,7 @@ type userResponse struct {
 }
 
 // OpenAuthEndpoints returns the unauthenticated auth endpoints (register, login, logout).
-func OpenAuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []httputil.Endpoint {
+func OpenAuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret, secureCookie bool) []httputil.Endpoint {
 	return []httputil.Endpoint{
 		{
 			Method: http.MethodPost,
@@ -60,7 +60,7 @@ func OpenAuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []http
 					return nil, fmt.Errorf("register user: %w", err)
 				}
 
-				if err := token.Issue(r.ResponseWriter, jwtSecret, user.ID.String()); err != nil {
+				if err := token.Issue(r.ResponseWriter, jwtSecret, user.ID.String(), secureCookie); err != nil {
 					return nil, fmt.Errorf("issue token: %w", err)
 				}
 
@@ -83,7 +83,7 @@ func OpenAuthEndpoints(svc inbound.AuthService, jwtSecret auth.JWTSecret) []http
 					return nil, fmt.Errorf("login: %w", err)
 				}
 
-				if err := token.Issue(r.ResponseWriter, jwtSecret, user.ID.String()); err != nil {
+				if err := token.Issue(r.ResponseWriter, jwtSecret, user.ID.String(), secureCookie); err != nil {
 					return nil, fmt.Errorf("issue token: %w", err)
 				}
 

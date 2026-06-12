@@ -33,7 +33,7 @@ func (s *AuthSuite) SetupSuite() {
 	s.Suite.SetupSuite()
 
 	authSvc := service.NewAuthService(postgres.NewUserRepository(s.Pool))
-	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), s.Pool, authSvc, &noopDocumentService{}, testJWTSecret)
+	srv := httpserver.NewServer(slog.New(slog.NewTextHandler(io.Discard, nil)), s.Pool, authSvc, &noopDocumentService{}, testJWTSecret, false)
 	s.server = httptest.NewServer(srv)
 }
 

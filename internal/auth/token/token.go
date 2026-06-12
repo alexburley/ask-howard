@@ -15,7 +15,7 @@ const (
 	ttl        = 7 * 24 * time.Hour
 )
 
-func Issue(w http.ResponseWriter, secret auth.JWTSecret, userID string) error {
+func Issue(w http.ResponseWriter, secret auth.JWTSecret, userID string, secure bool) error {
 	now := time.Now()
 	signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": userID,
@@ -31,7 +31,7 @@ func Issue(w http.ResponseWriter, secret auth.JWTSecret, userID string) error {
 		Name:     CookieName,
 		Value:    signed,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   secure,
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   int(ttl.Seconds()),
 		Path:     "/",
