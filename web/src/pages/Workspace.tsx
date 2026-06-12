@@ -3,14 +3,13 @@ import { useAuth } from '../auth/AuthContext'
 import { DocumentCanvas } from '../components/DocumentCanvas'
 import { DocumentDetail } from '../components/DocumentDetail'
 import { UploadControl } from '../components/UploadControl'
-import { DocumentResponse } from '../documents/types'
 import { useDocuments } from '../hooks/useDocuments'
 
 export function Workspace() {
   const { logout } = useAuth()
   const { state: docsState, refresh } = useDocuments()
   const [uploading, setUploading] = useState(false)
-  const [selectedDoc, setSelectedDoc] = useState<DocumentResponse | null>(null)
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null)
 
   const hasDocs = docsState.phase === 'loaded' && docsState.documents.length > 0
 
@@ -41,10 +40,10 @@ export function Workspace() {
       </button>
       <DocumentCanvas
         documents={docsState.documents}
-        onNodeClick={setSelectedDoc}
+        onNodeClick={(doc) => setSelectedDocId(doc.id)}
       />
-      {selectedDoc && (
-        <DocumentDetail doc={selectedDoc} onClose={() => setSelectedDoc(null)} />
+      {selectedDocId && (
+        <DocumentDetail docId={selectedDocId} onClose={() => setSelectedDocId(null)} />
       )}
     </div>
   )

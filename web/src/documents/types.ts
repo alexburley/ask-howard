@@ -21,6 +21,7 @@ export type DocumentResponse = {
   sizeBytes: number
   presignedUrl: string
   presignedUrlExpiresAt: string
+  createdAt: string
 }
 
 export type DocumentErrorCode = 'UNAUTHORIZED' | 'NOT_FOUND' | 'NETWORK_ERROR'

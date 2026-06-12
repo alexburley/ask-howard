@@ -21,6 +21,7 @@ type WireDocument = {
   size_bytes: number
   presigned_url: string
   presigned_url_expires_at: string
+  created_at: string
 }
 
 function toDocumentSet(w: WireDocumentSet): DocumentSet {
@@ -49,6 +50,7 @@ function toDocument(w: WireDocument): DocumentResponse {
     sizeBytes: w.size_bytes,
     presignedUrl: w.presigned_url,
     presignedUrlExpiresAt: w.presigned_url_expires_at,
+    createdAt: w.created_at,
   }
 }
 
@@ -120,6 +122,20 @@ export async function listDocuments(): Promise<DocumentResponse[]> {
   if (!res.ok) throw new DocumentError('NETWORK_ERROR', 'Failed to fetch documents')
   const wire: WireDocument[] = await res.json()
   return wire.map(toDocument)
+}
+
+export async function getDocument(id: string): Promise<DocumentResponse> {
+  let res: Response
+  try {
+    res = await fetch(`/api/documents/${id}`)
+  } catch {
+    throw new DocumentError('NETWORK_ERROR', 'Network error')
+  }
+
+  if (res.status === 401) throw new DocumentError('UNAUTHORIZED', 'Not authenticated')
+  if (res.status === 404) throw new DocumentError('NOT_FOUND', 'Document not found')
+  if (!res.ok) throw new DocumentError('NETWORK_ERROR', 'Failed to fetch document')
+  return toDocument(await res.json())
 }
 
 export async function pollDocumentSet(setID: string): Promise<DocumentSet> {

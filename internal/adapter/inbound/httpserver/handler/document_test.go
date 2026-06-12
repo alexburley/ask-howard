@@ -343,6 +343,85 @@ func (s *DocumentSuite) getDocuments(token *http.Cookie) *http.Response {
 	return resp
 }
 
+func (s *DocumentSuite) TestGetDocument_ReturnsMetadataAndPresignedURL() {
+	ctx := s.T().Context()
+	token := s.registerAndGetToken("doc-getone@example.com")
+	userID := s.userIDByEmail(ctx, "doc-getone@example.com")
+	docID := s.insertDocumentDirect(ctx, userID, "record.txt", "text/plain")
+
+	resp := s.getDocument(token, docID)
+	defer resp.Body.Close()
+	s.Equal(http.StatusOK, resp.StatusCode)
+
+	var body map[string]interface{}
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&body))
+	s.Equal(docID, body["id"])
+	s.NotEmpty(body["presigned_url"])
+	s.NotEmpty(body["created_at"])
+}
+
+func (s *DocumentSuite) TestGetDocument_NotFoundForAnotherUser() {
+	ctx := s.T().Context()
+	ownerToken := s.registerAndGetToken("doc-getone-owner@example.com")
+	otherToken := s.registerAndGetToken("doc-getone-other@example.com")
+	ownerID := s.userIDByEmail(ctx, "doc-getone-owner@example.com")
+	docID := s.insertDocumentDirect(ctx, ownerID, "record.txt", "text/plain")
+
+	_ = ownerToken
+	resp := s.getDocument(otherToken, docID)
+	defer resp.Body.Close()
+	s.Equal(http.StatusNotFound, resp.StatusCode)
+}
+
+func (s *DocumentSuite) TestGetDocument_UnauthorizedWithNoCookie() {
+	req, _ := http.NewRequest(http.MethodGet, s.server.URL+"/api/documents/"+uuid.New().String(), nil)
+	resp, err := s.server.Client().Do(req)
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+	s.Equal(http.StatusUnauthorized, resp.StatusCode)
+}
+
+func (s *DocumentSuite) getDocument(token *http.Cookie, docID string) *http.Response {
+	s.T().Helper()
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/documents/%s", s.server.URL, docID), nil)
+	req.AddCookie(token)
+	resp, err := s.server.Client().Do(req)
+	s.Require().NoError(err)
+	return resp
+}
+
+func (s *DocumentSuite) userIDByEmail(ctx context.Context, email string) uuid.UUID {
+	s.T().Helper()
+	e, err := domain.NewEmail(email)
+	s.Require().NoError(err)
+	userRepo := postgres.NewUserRepository(s.Pool)
+	user, err := userRepo.FindByEmail(ctx, e)
+	s.Require().NoError(err)
+	return user.ID
+}
+
+func (s *DocumentSuite) insertDocumentDirect(ctx context.Context, userID uuid.UUID, filename, contentType string) string {
+	s.T().Helper()
+	key := fmt.Sprintf("docs/%s/%s", userID, uuid.New())
+	set, err := s.docRepo.CreateDocumentSet(ctx, outbound.CreateDocumentSetParams{
+		UserID:           userID,
+		OriginalFilename: filename,
+		Status:           domain.DocumentSetStatusReady,
+		ObjectKey:        key,
+	})
+	s.Require().NoError(err)
+	doc, err := s.docRepo.InsertDocument(ctx, &outbound.InsertDocumentParams{
+		SetID:       set.ID,
+		UserID:      userID,
+		Filename:    filename,
+		ContentType: contentType,
+		SizeBytes:   0,
+		ObjectKey:   key,
+	})
+	s.Require().NoError(err)
+	return doc.ID.String()
+}
+
 func (s *DocumentSuite) createUser(ctx context.Context, email string) uuid.UUID {
 	s.T().Helper()
 	e, err := domain.NewEmail(email)

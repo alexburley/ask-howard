@@ -377,6 +377,12 @@ body {
   white-space: nowrap;
 }
 
+.detail-error {
+  margin: 0.75rem 1rem;
+  color: #e57373;
+  font-size: 0.85rem;
+}
+
 .detail-tags-seam {
   height: 1px;
   background: #2a2a2a;

@@ -91,6 +91,21 @@ func (s *DocumentService) GetDocumentSet(ctx context.Context, setID, userID uuid
 
 const presignGetExpiry = 15 * time.Minute
 
+func (s *DocumentService) GetDocument(ctx context.Context, docID, userID uuid.UUID) (inbound.DocumentWithURL, error) {
+	doc, err := s.docs.GetDocumentByIDAndUser(ctx, docID, userID)
+	if err != nil {
+		return inbound.DocumentWithURL{}, fmt.Errorf("get document: %w", err)
+	}
+
+	expiresAt := time.Now().Add(presignGetExpiry)
+	url, err := s.store.PresignGet(ctx, doc.ObjectKey, presignGetExpiry)
+	if err != nil {
+		return inbound.DocumentWithURL{}, fmt.Errorf("presign get: %w", err)
+	}
+
+	return inbound.DocumentWithURL{Document: doc, PresignedURL: url, PresignedURLExp: expiresAt}, nil
+}
+
 func (s *DocumentService) ListDocuments(ctx context.Context, userID uuid.UUID) ([]inbound.DocumentWithURL, error) {
 	docs, err := s.docs.ListDocumentsByUser(ctx, userID)
 	if err != nil {

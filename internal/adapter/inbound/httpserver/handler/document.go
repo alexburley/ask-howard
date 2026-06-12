@@ -39,9 +39,14 @@ type documentResponse struct {
 	SizeBytes             int64     `json:"size_bytes"`
 	PresignedURL          string    `json:"presigned_url"`
 	PresignedURLExpiresAt time.Time `json:"presigned_url_expires_at"`
+	CreatedAt             time.Time `json:"created_at"`
 }
 
 type setIDParams struct {
+	ID uuid.UUID `path:"id" validate:"required"`
+}
+
+type docIDParams struct {
 	ID uuid.UUID `path:"id" validate:"required"`
 }
 
@@ -144,10 +149,39 @@ func DocumentEndpoints(svc inbound.DocumentService) []httputil.Endpoint {
 						SizeBytes:             docs[i].SizeBytes,
 						PresignedURL:          docs[i].PresignedURL,
 						PresignedURLExpiresAt: docs[i].PresignedURLExp,
+						CreatedAt:             docs[i].CreatedAt,
 					})
 				}
 
 				return httputil.OK(resp)
+			}),
+		},
+		{
+			Method: http.MethodGet,
+			Path:   "/documents/{id}",
+			Handler: httputil.NewHandler(func(r httputil.RequestParams[docIDParams]) (*httputil.Response, error) {
+				userID, err := auth.UserIDFromContext(r.Context())
+				if err != nil {
+					return nil, fmt.Errorf("read user from context: %w", err)
+				}
+
+				doc, err := svc.GetDocument(r.Context(), r.Params.ID, userID)
+				if err != nil {
+					if errors.Is(err, domain.ErrDocumentNotFound) {
+						return nil, notFoundProblem()
+					}
+					return nil, fmt.Errorf("get document: %w", err)
+				}
+
+				return httputil.OK(documentResponse{
+					ID:                    doc.ID.String(),
+					Filename:              doc.Filename,
+					ContentType:           doc.ContentType,
+					SizeBytes:             doc.SizeBytes,
+					PresignedURL:          doc.PresignedURL,
+					PresignedURLExpiresAt: doc.PresignedURLExp,
+					CreatedAt:             doc.CreatedAt,
+				})
 			}),
 		},
 	}

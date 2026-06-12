@@ -246,4 +246,8 @@ func (n *noopDocumentService) ListDocuments(_ context.Context, _ uuid.UUID) ([]i
 	return nil, nil
 }
 
+func (n *noopDocumentService) GetDocument(_ context.Context, _, _ uuid.UUID) (inbound.DocumentWithURL, error) {
+	return inbound.DocumentWithURL{}, nil
+}
+
 var _ inbound.DocumentService = (*noopDocumentService)(nil)

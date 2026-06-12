@@ -30,4 +30,5 @@ type DocumentService interface {
 	CompleteUpload(ctx context.Context, setID, userID uuid.UUID) (DocumentSetWithCount, error)
 	GetDocumentSet(ctx context.Context, setID, userID uuid.UUID) (DocumentSetWithCount, error)
 	ListDocuments(ctx context.Context, userID uuid.UUID) ([]DocumentWithURL, error)
+	GetDocument(ctx context.Context, docID, userID uuid.UUID) (DocumentWithURL, error)
 }
