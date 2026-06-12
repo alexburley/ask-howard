@@ -55,6 +55,13 @@ internal/
 - `make migrate-apply` applies locally. Migrations applied automatically in functional tests.
 - Atlas CE uses a positional name argument: `atlas migrate diff --env local "name"` (no `--name` flag).
 
+## Planning & Issue Tracking
+
+- All features, epics, and user stories are tracked as **GitHub issues** in the `alexburley/ask-howard` repo.
+- When planning new work, create issues via `gh issue create` rather than writing planning docs.
+- Use labels: `epic` for epic-level tracking, `story` for user stories, `mvp` for MVP scope, `deferred` for backlog items.
+- Link story issues to their parent epic with "Part of #N" in the body.
+
 ## Dev Workflow
 
 - `make start` — starts all services via Docker Compose: Postgres, Go API (air hot-reload), Vite dev server.
